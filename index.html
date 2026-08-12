@@ -431,9 +431,24 @@ async function saveAppsToGithub(message){
   if (!adminCfg) return false;
   const { owner, repo, branch, token } = adminCfg;
   const content = btoa(unescape(encodeURIComponent(JSON.stringify({ apps }, null, 2))));
-  const body = { message, content, branch };
-  if (currentSha) body.sha = currentSha;
   try{
+    // Always fetch the latest sha right before saving — currentSha can go stale
+    // after a page refresh (or if another admin session changed the file),
+    // and GitHub rejects the write without the correct current sha.
+    let sha = null;
+    const getR = await fetch(`${GITHUB_API}/repos/${owner}/${repo}/contents/${DATA_FILE}?ref=${branch}`, {
+      headers:{ Authorization:`token ${token}`, Accept:'application/vnd.github+json' }
+    });
+    if (getR.status === 200){
+      const getData = await getR.json();
+      sha = getData.sha;
+    } else if (getR.status !== 404){
+      const t = await getR.text().catch(()=> '');
+      throw new Error('GitHub se latest version fetch nahi ho payi (' + getR.status + '). ' + t.slice(0,150));
+    }
+
+    const body = { message, content, branch };
+    if (sha) body.sha = sha;
     const r = await fetch(`${GITHUB_API}/repos/${owner}/${repo}/contents/${DATA_FILE}`, {
       method:'PUT',
       headers:{ Authorization:`token ${token}`, Accept:'application/vnd.github+json', 'Content-Type':'application/json' },
@@ -444,7 +459,7 @@ async function saveAppsToGithub(message){
       throw new Error('GitHub par save nahi hua (' + r.status + '). ' + t.slice(0,150));
     }
     const data = await r.json();
-    currentSha = data.content ? data.content.sha : currentSha;
+    currentSha = data.content ? data.content.sha : sha;
     lastAppsSignature = JSON.stringify(apps);
     return true;
   }catch(e){

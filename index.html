@@ -1,0 +1,539 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>App Repository — EWD Azamgarh</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#16324a">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<style>
+  :root{
+    --navy:#16324a; --navy-2:#1f4a6b; --steel:#5b7a94; --steel-light:#e7edf2;
+    --amber:#c9822c; --amber-light:#fbeedb;
+    --green:#2f8f5b; --green-light:#e6f5ec;
+    --red:#c0392b; --red-light:#fbe9e7;
+    --bg:#f4f6f8; --card:#ffffff; --text:#1c2b38; --text-mute:#6b7c8a;
+    --radius:14px; --radius-sm:9px;
+    --shadow:0 2px 10px rgba(22,50,74,.08), 0 1px 2px rgba(22,50,74,.06);
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;background:var(--bg);color:var(--text);-webkit-font-smoothing:antialiased;}
+  .wrap{max-width:1100px;margin:0 auto;padding:0 0 60px;}
+  .app-hidden{display:none !important;}
+
+  .topbar{
+    background:linear-gradient(135deg,var(--navy),var(--navy-2));
+    color:#fff; padding:22px 20px 26px; border-radius:0 0 20px 20px;
+    display:flex; justify-content:space-between; align-items:flex-start; gap:16px; flex-wrap:wrap;
+  }
+  .topbar h1{margin:0;font-size:22px;font-weight:800;letter-spacing:.2px;}
+  .topbar p{margin:6px 0 0;font-size:12.5px;color:#c8d8e4;font-weight:500;}
+  .top-right{display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
+  .install-btn, .ghost-btn{
+    background:rgba(255,255,255,.14); color:#fff; border:1px solid rgba(255,255,255,.35);
+    border-radius:20px; padding:8px 14px; font-size:12.5px; font-weight:700; cursor:pointer;
+  }
+  .admin-badge{display:flex;align-items:center;gap:6px;background:rgba(255,255,255,.16);border-radius:20px;padding:6px 12px;font-size:12px;font-weight:700;}
+  .admin-badge .dot{width:7px;height:7px;border-radius:50%;background:var(--green);box-shadow:0 0 0 3px rgba(47,143,91,.25);}
+
+  /* ===================== MAIN CONTENT ===================== */
+  #app{padding:26px 20px 0;}
+  .toolbar{display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin-bottom:22px;}
+  .search-box{
+    flex:1 1 260px; display:flex; align-items:center; gap:8px;
+    background:var(--card); border:1px solid #e2e8ee; border-radius:var(--radius-sm);
+    padding:10px 14px; box-shadow:var(--shadow);
+  }
+  .search-box input{border:none;outline:none;flex:1;font-size:14px;background:transparent;color:var(--text);}
+  .search-box svg{flex:0 0 auto;opacity:.5;}
+  .add-btn{
+    background:var(--navy); color:#fff; border:none; border-radius:var(--radius-sm);
+    padding:11px 20px; font-size:13.5px; font-weight:700; cursor:pointer; white-space:nowrap;
+    box-shadow:var(--shadow); transition:transform .15s ease, background .15s ease;
+  }
+  .add-btn:hover{background:var(--navy-2); transform:translateY(-1px);}
+
+  .app-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:16px;}
+  .app-tile{
+    background:var(--card); border-radius:var(--radius); box-shadow:var(--shadow);
+    padding:18px; display:flex; flex-direction:column; gap:10px; position:relative;
+    transition:transform .15s ease, box-shadow .15s ease;
+    border:1px solid #eef2f6;
+  }
+  .app-tile.tile-enter{animation:tileIn .35s ease both;}
+  .app-tile:hover{transform:translateY(-3px); box-shadow:0 10px 24px rgba(22,50,74,.12);}
+  @keyframes tileIn{from{opacity:0;transform:translateY(10px) scale(.97);}to{opacity:1;transform:translateY(0) scale(1);}}
+  .tile-top{display:flex;align-items:flex-start;justify-content:space-between;gap:8px;}
+  .tile-icon{
+    width:46px; height:46px; border-radius:12px; display:flex; align-items:center; justify-content:center;
+    font-size:22px; flex:0 0 auto; color:#fff; font-weight:700;
+  }
+  .tile-admin-actions{display:flex;gap:4px;}
+  .icon-btn{
+    width:26px; height:26px; border-radius:7px; border:none; background:var(--steel-light);
+    color:var(--steel); font-size:12px; cursor:pointer; display:flex; align-items:center; justify-content:center;
+  }
+  .icon-btn:hover{background:#dde6ee;}
+  .icon-btn.del:hover{background:var(--red-light); color:var(--red);}
+  .tile-name{font-size:15px;font-weight:800;color:var(--text);margin:0;line-height:1.3;}
+  .tile-desc{font-size:12.5px;color:var(--text-mute);margin:0;line-height:1.5;min-height:18px;}
+  .tile-host{font-size:11px;color:var(--steel);font-weight:600;word-break:break-all;}
+  .tile-open{
+    margin-top:4px; text-decoration:none; text-align:center; background:var(--steel-light);
+    color:var(--navy); font-weight:700; font-size:12.5px; padding:9px; border-radius:9px;
+    transition:background .15s ease;
+  }
+  .tile-open:hover{background:#dbe6ee;}
+
+  .empty-state{text-align:center; padding:60px 20px; color:var(--text-mute);}
+  .empty-state .big{font-size:40px;margin-bottom:10px;}
+  .empty-state h3{margin:0 0 6px;color:var(--text);font-size:16px;}
+  .empty-state p{margin:0;font-size:13px;}
+
+  .skeleton-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:16px;}
+  .skeleton-tile{background:var(--card);border-radius:var(--radius);box-shadow:var(--shadow);padding:18px;height:150px;position:relative;overflow:hidden;}
+  .skeleton-tile::after{
+    content:'';position:absolute;inset:0;
+    background:linear-gradient(90deg,transparent,rgba(22,50,74,.06),transparent);
+    animation:shimmer 1.3s infinite;
+  }
+  @keyframes shimmer{from{transform:translateX(-100%);}to{transform:translateX(100%);}}
+
+  /* ===================== MODALS ===================== */
+  .modal-backdrop{
+    position:fixed;inset:0;background:rgba(16,28,38,.45);display:flex;align-items:center;justify-content:center;
+    z-index:5000; padding:16px; animation:fade .2s ease;
+  }
+  .modal{
+    background:var(--card); border-radius:var(--radius); width:100%; max-width:420px;
+    padding:24px; box-shadow:0 20px 60px rgba(0,0,0,.25); animation:modalIn .25s cubic-bezier(.34,1.56,.64,1);
+  }
+  @keyframes modalIn{from{opacity:0;transform:scale(.94) translateY(8px);}to{opacity:1;transform:scale(1) translateY(0);}}
+  @keyframes fade{from{opacity:0;}to{opacity:1;}}
+  .modal h3{margin:0 0 16px;font-size:17px;color:var(--navy);}
+  .modal .sub{margin:-10px 0 16px;font-size:12px;color:var(--text-mute);line-height:1.6;}
+  .field{margin-bottom:14px;}
+  .field label{display:block;font-size:11.5px;font-weight:700;color:var(--text-mute);text-transform:uppercase;letter-spacing:.4px;margin-bottom:5px;}
+  .field input, .field textarea{
+    width:100%; border:1px solid #dde6ee; border-radius:9px; padding:10px 12px; font-size:14px;
+    font-family:inherit; outline:none; color:var(--text); background:#fbfcfd;
+  }
+  .field input:focus, .field textarea:focus{border-color:var(--navy);}
+  .emoji-row{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px;}
+  .emoji-pick{
+    width:34px;height:34px;border-radius:8px;border:1px solid #dde6ee;background:#fff;
+    font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;
+  }
+  .emoji-pick.active{border-color:var(--navy);background:var(--steel-light);}
+  .modal-actions{display:flex;gap:10px;justify-content:flex-end;margin-top:18px;}
+  .btn-cancel{background:#eef2f6;color:var(--text);border:none;border-radius:9px;padding:10px 18px;font-weight:700;font-size:13.5px;cursor:pointer;}
+  .btn-save{background:var(--navy);color:#fff;border:none;border-radius:9px;padding:10px 18px;font-weight:700;font-size:13.5px;cursor:pointer;}
+  .btn-save:hover{background:var(--navy-2);}
+  .btn-save[disabled]{opacity:.6;cursor:default;}
+  .link-btn{background:none;border:none;color:var(--red);font-size:12px;font-weight:700;cursor:pointer;text-decoration:underline;padding:0;}
+
+  /* ===================== TOASTS ===================== */
+  #toastStack{
+    position:fixed; left:50%; bottom:26px; transform:translateX(-50%);
+    z-index:9999; display:flex; flex-direction:column; align-items:center; gap:10px;
+    pointer-events:none; width:100%; max-width:380px; padding:0 14px;
+  }
+  .toast{
+    pointer-events:auto; display:flex; align-items:center; gap:12px;
+    background:#ffffff; border-radius:12px; padding:12px 16px;
+    box-shadow:0 10px 30px rgba(22,50,74,.22), 0 2px 8px rgba(22,50,74,.12);
+    border-left:5px solid var(--navy); width:100%;
+    animation: toastIn .38s cubic-bezier(.34,1.56,.64,1) forwards;
+    font-size:13.5px; font-weight:600; color:var(--text);
+  }
+  .toast.leaving{ animation: toastOut .32s ease forwards; }
+  .toast .toast-icon{
+    flex:0 0 auto; width:30px; height:30px; border-radius:50%;
+    display:flex; align-items:center; justify-content:center;
+    font-size:15px; color:#fff; background:var(--navy);
+    animation: toastPop .45s .05s cubic-bezier(.34,1.56,.64,1) both;
+  }
+  .toast .toast-body{display:flex; flex-direction:column; gap:1px; min-width:0;}
+  .toast .toast-title{font-size:12px; font-weight:800; text-transform:uppercase; letter-spacing:.4px;}
+  .toast .toast-msg{font-size:12.5px; color:var(--text-mute); font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+  .toast.add{border-left-color:var(--green);} .toast.add .toast-icon{background:var(--green);} .toast.add .toast-title{color:var(--green);}
+  .toast.update{border-left-color:var(--amber);} .toast.update .toast-icon{background:var(--amber);} .toast.update .toast-title{color:#8a4a13;}
+  .toast.del{border-left-color:var(--red);} .toast.del .toast-icon{background:var(--red); animation: toastShake .5s .05s both;} .toast.del .toast-title{color:var(--red);}
+  .toast.err{border-left-color:var(--red);} .toast.err .toast-icon{background:var(--red);} .toast.err .toast-title{color:var(--red);}
+  @keyframes toastIn{from{opacity:0; transform:translateY(24px) scale(.92);} to{opacity:1; transform:translateY(0) scale(1);}}
+  @keyframes toastOut{from{opacity:1; transform:translateY(0) scale(1);} to{opacity:0; transform:translateY(-14px) scale(.94);}}
+  @keyframes toastPop{0%{transform:scale(0) rotate(-30deg); opacity:0;} 60%{transform:scale(1.25) rotate(6deg); opacity:1;} 100%{transform:scale(1) rotate(0deg); opacity:1;}}
+  @keyframes toastShake{0%,100%{transform:translateX(0) rotate(0);} 20%{transform:translateX(-3px) rotate(-8deg);} 40%{transform:translateX(3px) rotate(8deg);} 60%{transform:translateX(-2px) rotate(-5deg);} 80%{transform:translateX(2px) rotate(5deg);}}
+
+  @media(max-width:520px){
+    .topbar{padding:18px 16px 22px;}
+    .topbar h1{font-size:19px;}
+    #toastStack{max-width:calc(100% - 24px);}
+  }
+</style>
+</head>
+<body>
+
+<div id="toastStack"></div>
+
+<div class="wrap">
+  <div class="topbar">
+    <div>
+      <h1>🔗 App Repository</h1>
+      <p>EWD Azamgarh — Sabhi Web App / PWA ki links ek jagah</p>
+    </div>
+    <div class="top-right">
+      <button class="install-btn" id="installBtn">📲 Install App</button>
+      <button class="ghost-btn app-hidden" id="adminUnlockBtn">🔒 Admin</button>
+      <div class="admin-badge app-hidden" id="adminBadgeBox"><span class="dot"></span> Admin Mode<button class="ghost-btn" id="adminLockBtn" style="margin-left:8px;padding:3px 9px;font-size:10.5px;">Lock</button></div>
+    </div>
+  </div>
+
+  <!-- MAIN APP — hamesha turant khula rehta hai, koi login gate nahi -->
+  <div id="app">
+    <div class="toolbar">
+      <div class="search-box">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+        <input type="text" id="searchInput" placeholder="App search karein...">
+      </div>
+      <button class="add-btn app-hidden" id="addAppBtn">+ Naya App Add Karein</button>
+    </div>
+
+    <div class="skeleton-grid" id="skeletonGrid">
+      <div class="skeleton-tile"></div><div class="skeleton-tile"></div><div class="skeleton-tile"></div>
+    </div>
+    <div class="app-grid app-hidden" id="appGrid"></div>
+    <div class="empty-state app-hidden" id="emptyState">
+      <div class="big">📭</div>
+      <h3 id="emptyTitle">Abhi tak koi app add nahi hui</h3>
+      <p id="emptyMsg">Admin unlock kar ke pehli app add karein.</p>
+    </div>
+  </div>
+</div>
+
+<!-- ADD/EDIT MODAL -->
+<div class="modal-backdrop app-hidden" id="modalBackdrop">
+  <div class="modal">
+    <h3 id="modalTitle">Naya App Add Karein</h3>
+    <div class="field"><label>App Ka Naam</label><input type="text" id="fName" placeholder="e.g. Wire &amp; Strip Stock Dashboard"></div>
+    <div class="field"><label>Link (URL)</label><input type="text" id="fUrl" placeholder="https://..."></div>
+    <div class="field"><label>Chhota Description (optional)</label><input type="text" id="fDesc" placeholder="e.g. Daily stock aur balance tracker"></div>
+    <div class="field"><label>Icon Chunein</label><div class="emoji-row" id="emojiRow"></div></div>
+    <div class="modal-actions">
+      <button class="btn-cancel" id="modalCancelBtn" type="button">Cancel</button>
+      <button class="btn-save" id="modalSaveBtn" type="button">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- ADMIN UNLOCK MODAL -->
+<div class="modal-backdrop app-hidden" id="adminBackdrop">
+  <div class="modal">
+    <h3>🔒 Admin Unlock</h3>
+    <div class="sub" id="adminSub">Sirf ek baar setup karna hai. Apps ki list is GitHub repo ki <code>apps.json</code> file mein save hoti hai — admin ko ek GitHub Personal Access Token chahiye taaki wo edit kar sake. Neeche "Setup guide" dabayein agar pehli baar kar rahe hain.</div>
+    <div class="field"><label>GitHub Username</label><input type="text" id="cfgOwner" placeholder="e.g. kmith313"></div>
+    <div class="field"><label>Repository Ka Naam</label><input type="text" id="cfgRepo" placeholder="e.g. kmith313.github.io"></div>
+    <div class="field"><label>Branch</label><input type="text" id="cfgBranch" placeholder="main" value="main"></div>
+    <div class="field"><label>Personal Access Token</label><input type="password" id="cfgToken" placeholder="ghp_..."></div>
+    <button class="link-btn" id="setupGuideBtn" type="button" style="margin-bottom:6px;">ℹ️ Token kaise banayein? (Setup guide)</button>
+    <div id="setupGuideBox" class="app-hidden" style="background:var(--steel-light);border-radius:9px;padding:12px;font-size:12px;line-height:1.7;margin-bottom:10px;color:var(--text);">
+      1. <b>github.com/settings/tokens?type=beta</b> par jayein aur "Generate new token" dabayein<br>
+      2. Naam kuch bhi rakhein, Expiration "No expiration" ya lambi rakhein<br>
+      3. "Repository access" mein sirf apna repo chunein (jahan ye app-repository host hai)<br>
+      4. "Permissions" → "Contents" → "Read and write" set karein<br>
+      5. Token generate karke copy karein aur yahan paste karein — ye sirf isi browser mein save hoga, kahin aur nahi jayega
+    </div>
+    <div id="adminErrBox" class="app-hidden" style="background:var(--red-light);border-left:3px solid var(--red);padding:10px 12px;border-radius:8px;font-size:12px;color:#8f371f;margin-bottom:10px;"></div>
+    <div class="modal-actions">
+      <button class="btn-cancel" id="adminCancelBtn" type="button">Cancel</button>
+      <button class="btn-save" id="adminSaveBtn" type="button">Unlock</button>
+    </div>
+  </div>
+</div>
+
+<script>
+function $(id){ return document.getElementById(id); }
+
+/* ===================== CONFIG ===================== */
+// Public data file — anyone opening the app can read this instantly, no login.
+const DATA_FILE = 'apps.json';
+// How the app talks to GitHub to WRITE changes (admin only). Owner/repo/branch
+// are entered once by the admin via the unlock modal and remembered on that device.
+const GITHUB_API = 'https://api.github.com';
+const EMOJI_CHOICES = ["🔗","📊","📦","🛠️","⚡","🧾","📋","🗂️","💧","🔋","📈","🧮","🖥️","📱","🛢️"];
+const TILE_COLORS = ["#16324a","#1f4a6b","#2f8f5b","#c9822c","#c0392b","#5b7a94","#7d5ba6","#0e7c86"];
+
+/* ===================== STATE ===================== */
+let apps = [];
+let lastAppsSignature = '';
+let editingId = null;
+let adminCfg = null;      // {owner, repo, branch, token}
+let currentSha = null;    // sha of apps.json on GitHub, needed to write
+let pollTimer = null;
+
+/* ===================== TOASTS ===================== */
+const TOAST_CONFIG = {
+  add:{cls:'add',icon:'✅',title:'Added'}, update:{cls:'update',icon:'✏️',title:'Updated'},
+  del:{cls:'del',icon:'🗑',title:'Deleted'}, err:{cls:'err',icon:'⚠️',title:'Error'}
+};
+function showToast(type, msg){
+  const cfg = TOAST_CONFIG[type] || TOAST_CONFIG.add;
+  const stack = $('toastStack'); if (!stack) return;
+  const el = document.createElement('div');
+  el.className = `toast ${cfg.cls}`;
+  el.innerHTML = `<div class="toast-icon">${cfg.icon}</div><div class="toast-body"><div class="toast-title">${cfg.title}</div><div class="toast-msg">${msg}</div></div>`;
+  stack.appendChild(el);
+  const remove = () => { if (!el.isConnected) return; el.classList.add('leaving'); setTimeout(()=> el.remove(), 320); };
+  const timer = setTimeout(remove, 2800);
+  el.addEventListener('click', ()=>{ clearTimeout(timer); remove(); });
+}
+
+/* ===================== LOAD (public, no auth) ===================== */
+async function loadApps(silent){
+  try{
+    const r = await fetch('./' + DATA_FILE + '?t=' + Date.now(), { cache:'no-store' });
+    if (!r.ok){ apps = []; }
+    else {
+      const json = await r.json();
+      apps = Array.isArray(json.apps) ? json.apps : [];
+    }
+  }catch(e){
+    if (!silent) showToast('err', 'Apps list load nahi ho payi. Internet check karein.');
+    return;
+  }
+  const sig = JSON.stringify(apps);
+  if (sig === lastAppsSignature) return; // nothing changed — skip re-render to avoid flicker
+  lastAppsSignature = sig;
+  renderApps(true);
+}
+
+function startPolling(){
+  if (pollTimer) clearInterval(pollTimer);
+  pollTimer = setInterval(()=> loadApps(true), 15000);
+}
+
+/* ===================== RENDER ===================== */
+function hostOf(url){ try{ return new URL(url).hostname.replace('www.',''); }catch(e){ return url; } }
+function colorFor(str){ let h=0; for (let i=0;i<str.length;i++) h=(h*31+str.charCodeAt(i))>>>0; return TILE_COLORS[h % TILE_COLORS.length]; }
+function escapeHtml(s){ return String(s).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+
+function renderApps(isDataUpdate){
+  $('skeletonGrid').classList.add('app-hidden');
+  const term = ($('searchInput').value || '').trim().toLowerCase();
+  const filtered = apps.filter(a => !term || (a.name||'').toLowerCase().includes(term) || (a.desc||'').toLowerCase().includes(term));
+  const grid = $('appGrid');
+  grid.classList.remove('app-hidden');
+  $('emptyState').classList.toggle('app-hidden', filtered.length>0);
+  grid.innerHTML = '';
+  if (!filtered.length){
+    $('emptyTitle').textContent = apps.length ? 'Koi app match nahi hui' : 'Abhi tak koi app add nahi hui';
+    $('emptyMsg').textContent = apps.length
+      ? 'Search se koi app match nahi hui.'
+      : (adminCfg ? '"+ Naya App Add Karein" button se pehli app add karein.' : 'Admin ke app add karne ka intezaar karein.');
+    return;
+  }
+  filtered.slice().sort((a,b)=> (a.name||'').localeCompare(b.name||'')).forEach(a=>{
+    const tile = document.createElement('div');
+    tile.className = 'app-tile' + (isDataUpdate ? ' tile-enter' : '');
+    const color = colorFor(a.name||a.id||'x');
+    tile.innerHTML = `
+      <div class="tile-top">
+        <div class="tile-icon" style="background:${color}">${a.icon || '🔗'}</div>
+        ${adminCfg ? `<div class="tile-admin-actions">
+          <button class="icon-btn edit-btn" data-id="${a.id}" title="Edit">✏️</button>
+          <button class="icon-btn del del-btn" data-id="${a.id}" title="Delete">🗑</button>
+        </div>` : ''}
+      </div>
+      <p class="tile-name">${escapeHtml(a.name||'')}</p>
+      <p class="tile-desc">${escapeHtml(a.desc||'')}</p>
+      <div class="tile-host">${escapeHtml(hostOf(a.url||''))}</div>
+      <a class="tile-open" href="${escapeHtml(a.url||'#')}" target="_blank" rel="noopener noreferrer">Open ↗</a>
+    `;
+    grid.appendChild(tile);
+  });
+  if (adminCfg){
+    grid.querySelectorAll('.edit-btn').forEach(b=> b.addEventListener('click', ()=> openModal(b.dataset.id)));
+    grid.querySelectorAll('.del-btn').forEach(b=> b.addEventListener('click', ()=> deleteApp(b.dataset.id)));
+  }
+}
+$('searchInput').addEventListener('input', ()=> renderApps(false));
+
+/* ===================== ADMIN UNLOCK (no Google login — just a saved GitHub token) ===================== */
+function loadAdminCfg(){
+  try{
+    const raw = localStorage.getItem('ar_admin_cfg');
+    if (!raw) return null;
+    return JSON.parse(raw);
+  }catch(e){ return null; }
+}
+function applyAdminUI(){
+  $('adminUnlockBtn').classList.toggle('app-hidden', !!adminCfg);
+  $('adminBadgeBox').classList.toggle('app-hidden', !adminCfg);
+  $('addAppBtn').classList.toggle('app-hidden', !adminCfg);
+  renderApps(false);
+}
+adminCfg = loadAdminCfg();
+
+$('adminUnlockBtn').addEventListener('click', ()=>{
+  $('adminErrBox').classList.add('app-hidden');
+  $('cfgOwner').value = ''; $('cfgRepo').value = ''; $('cfgBranch').value='main'; $('cfgToken').value='';
+  $('adminBackdrop').classList.remove('app-hidden');
+});
+$('adminCancelBtn').addEventListener('click', ()=> $('adminBackdrop').classList.add('app-hidden'));
+$('adminBackdrop').addEventListener('click', (e)=>{ if (e.target.id==='adminBackdrop') $('adminBackdrop').classList.add('app-hidden'); });
+$('setupGuideBtn').addEventListener('click', ()=> $('setupGuideBox').classList.toggle('app-hidden'));
+
+$('adminSaveBtn').addEventListener('click', async ()=>{
+  const owner = $('cfgOwner').value.trim();
+  const repo = $('cfgRepo').value.trim();
+  const branch = $('cfgBranch').value.trim() || 'main';
+  const token = $('cfgToken').value.trim();
+  if (!owner || !repo || !token){ showAdminErr('Username, repo aur token teeno zaroori hain.'); return; }
+  $('adminSaveBtn').disabled = true; $('adminSaveBtn').textContent = 'Checking...';
+  try{
+    const r = await fetch(`${GITHUB_API}/repos/${owner}/${repo}/contents/${DATA_FILE}?ref=${branch}`, {
+      headers: { Authorization: `token ${token}`, Accept:'application/vnd.github+json' }
+    });
+    if (r.status === 404){
+      // File doesn't exist yet — fine, we'll create it on first save.
+      currentSha = null;
+    } else if (!r.ok){
+      const t = await r.text().catch(()=> '');
+      throw new Error('GitHub se connect nahi ho paya (' + r.status + '). Token/repo/owner check karein.\n' + t.slice(0,150));
+    } else {
+      const data = await r.json();
+      currentSha = data.sha;
+    }
+    adminCfg = { owner, repo, branch, token };
+    localStorage.setItem('ar_admin_cfg', JSON.stringify(adminCfg));
+    $('adminBackdrop').classList.add('app-hidden');
+    applyAdminUI();
+    showToast('add', 'Admin mode unlock ho gaya');
+  }catch(e){
+    showAdminErr(e.message || 'Kuch galat ho gaya.');
+  }finally{
+    $('adminSaveBtn').disabled = false; $('adminSaveBtn').textContent = 'Unlock';
+  }
+});
+function showAdminErr(msg){ const b=$('adminErrBox'); b.textContent=msg; b.classList.remove('app-hidden'); }
+
+$('adminLockBtn').addEventListener('click', ()=>{
+  adminCfg = null; currentSha = null;
+  localStorage.removeItem('ar_admin_cfg');
+  applyAdminUI();
+  showToast('update', 'Admin mode lock ho gaya');
+});
+
+/* ===================== SAVE TO GITHUB (admin only) ===================== */
+async function saveAppsToGithub(message){
+  if (!adminCfg) return false;
+  const { owner, repo, branch, token } = adminCfg;
+  const content = btoa(unescape(encodeURIComponent(JSON.stringify({ apps }, null, 2))));
+  const body = { message, content, branch };
+  if (currentSha) body.sha = currentSha;
+  try{
+    const r = await fetch(`${GITHUB_API}/repos/${owner}/${repo}/contents/${DATA_FILE}`, {
+      method:'PUT',
+      headers:{ Authorization:`token ${token}`, Accept:'application/vnd.github+json', 'Content-Type':'application/json' },
+      body: JSON.stringify(body)
+    });
+    if (!r.ok){
+      const t = await r.text().catch(()=> '');
+      throw new Error('GitHub par save nahi hua (' + r.status + '). ' + t.slice(0,150));
+    }
+    const data = await r.json();
+    currentSha = data.content ? data.content.sha : currentSha;
+    lastAppsSignature = JSON.stringify(apps);
+    return true;
+  }catch(e){
+    showToast('err', e.message || 'Save fail ho gaya.');
+    return false;
+  }
+}
+
+/* ===================== ADD / EDIT MODAL ===================== */
+let selectedEmoji = EMOJI_CHOICES[0];
+function buildEmojiRow(){
+  const row = $('emojiRow'); row.innerHTML = '';
+  EMOJI_CHOICES.forEach(em=>{
+    const b = document.createElement('button');
+    b.type='button'; b.className='emoji-pick' + (em===selectedEmoji?' active':'');
+    b.textContent = em;
+    b.addEventListener('click', ()=>{ selectedEmoji = em; row.querySelectorAll('.emoji-pick').forEach(x=>x.classList.remove('active')); b.classList.add('active'); });
+    row.appendChild(b);
+  });
+}
+function openModal(id){
+  editingId = id || null;
+  const existing = editingId ? apps.find(a=>a.id===editingId) : null;
+  $('modalTitle').textContent = existing ? 'App Edit Karein' : 'Naya App Add Karein';
+  $('fName').value = existing ? existing.name : '';
+  $('fUrl').value = existing ? existing.url : '';
+  $('fDesc').value = existing ? (existing.desc||'') : '';
+  selectedEmoji = existing ? (existing.icon || EMOJI_CHOICES[0]) : EMOJI_CHOICES[0];
+  buildEmojiRow();
+  $('modalBackdrop').classList.remove('app-hidden');
+  setTimeout(()=> $('fName').focus(), 50);
+}
+function closeModal(){ $('modalBackdrop').classList.add('app-hidden'); editingId = null; }
+$('addAppBtn').addEventListener('click', ()=> openModal(null));
+$('modalCancelBtn').addEventListener('click', closeModal);
+$('modalBackdrop').addEventListener('click', (e)=>{ if (e.target.id==='modalBackdrop') closeModal(); });
+
+$('modalSaveBtn').addEventListener('click', async ()=>{
+  const name = $('fName').value.trim();
+  let url = $('fUrl').value.trim();
+  const desc = $('fDesc').value.trim();
+  if (!name || !url){ alert('App ka naam aur link (URL) zaroori hai.'); return; }
+  if (!/^https?:\/\//i.test(url)) url = 'https://' + url;
+
+  $('modalSaveBtn').disabled = true; $('modalSaveBtn').textContent = 'Saving...';
+  const wasEditing = !!editingId;
+  if (editingId){
+    const e = apps.find(a=>a.id===editingId);
+    if (e){ e.name=name; e.url=url; e.desc=desc; e.icon=selectedEmoji; }
+  } else {
+    apps.push({ id: Date.now().toString(36)+Math.random().toString(36).slice(2,6), name, url, desc, icon: selectedEmoji, addedAt: new Date().toISOString() });
+  }
+  const ok = await saveAppsToGithub(wasEditing ? `Update app: ${name}` : `Add app: ${name}`);
+  $('modalSaveBtn').disabled = false; $('modalSaveBtn').textContent = 'Save';
+  if (ok){
+    closeModal();
+    renderApps(true);
+    showToast(wasEditing ? 'update' : 'add', name);
+  }
+});
+
+async function deleteApp(id){
+  const e = apps.find(a=>a.id===id);
+  if (!e) return;
+  if (!confirm(`"${e.name}" delete karein?`)) return;
+  const backup = apps.slice();
+  apps = apps.filter(a=>a.id!==id);
+  const ok = await saveAppsToGithub(`Delete app: ${e.name}`);
+  if (ok){ renderApps(true); showToast('del', e.name); }
+  else { apps = backup; }
+}
+
+/* ===================== INSTALL PROMPT ===================== */
+let deferredPrompt;
+window.addEventListener('beforeinstallprompt', (e)=>{ e.preventDefault(); deferredPrompt = e; });
+$('installBtn').addEventListener('click', async ()=>{
+  if (!deferredPrompt){ alert('Browser ke "Add to Home Screen" option se install karein.'); return; }
+  deferredPrompt.prompt(); await deferredPrompt.userChoice; deferredPrompt = null;
+});
+if ('serviceWorker' in navigator){
+  window.addEventListener('load', ()=> navigator.serviceWorker.register('sw.js').catch(()=>{}));
+}
+
+/* ===================== INIT ===================== */
+applyAdminUI();
+loadApps(false).then(()=>{
+  if (!apps.length){ $('skeletonGrid').classList.add('app-hidden'); $('appGrid').classList.remove('app-hidden'); renderApps(false); }
+});
+startPolling();
+</script>
+</body>
+</html>

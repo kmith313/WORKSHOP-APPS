@@ -172,6 +172,44 @@
     .topbar h1{font-size:19px;}
     #toastStack{max-width:calc(100% - 24px);}
   }
+
+  /* ===================== APP VIEWER (in-page iframe) ===================== */
+  #appViewer{
+    position:fixed; inset:0; background:var(--bg); z-index:4000;
+    display:flex; flex-direction:column;
+  }
+  .viewer-bar{
+    background:linear-gradient(135deg,var(--navy),var(--navy-2)); color:#fff;
+    display:flex; align-items:center; gap:12px; padding:10px 14px;
+    box-shadow:0 2px 10px rgba(22,50,74,.18); flex:0 0 auto;
+  }
+  .viewer-back{
+    display:flex; align-items:center; gap:6px; background:rgba(255,255,255,.14);
+    border:1px solid rgba(255,255,255,.35); color:#fff; border-radius:20px;
+    padding:8px 14px; font-size:13px; font-weight:700; cursor:pointer; flex:0 0 auto;
+  }
+  .viewer-back:hover{background:rgba(255,255,255,.24);}
+  .viewer-title{display:flex; align-items:center; gap:8px; min-width:0; flex:1 1 auto;}
+  .viewer-icon{font-size:18px; flex:0 0 auto;}
+  .viewer-name{font-size:14px; font-weight:800; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+  .viewer-host{font-size:11px; color:#c8d8e4; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+  .viewer-external{
+    flex:0 0 auto; background:rgba(255,255,255,.14); border:1px solid rgba(255,255,255,.35);
+    color:#fff; border-radius:20px; padding:8px 12px; font-size:12px; font-weight:700;
+    cursor:pointer; text-decoration:none; display:flex; align-items:center; gap:5px;
+  }
+  .viewer-external:hover{background:rgba(255,255,255,.24);}
+  #appViewerFrame{flex:1 1 auto; width:100%; height:100%; border:none; background:#fff;}
+  .viewer-loading{
+    position:absolute; inset:0; top:52px; display:flex; flex-direction:column;
+    align-items:center; justify-content:center; gap:10px; color:var(--text-mute);
+    font-size:13px; font-weight:600; background:var(--bg);
+  }
+  .viewer-spinner{
+    width:30px; height:30px; border-radius:50%; border:3px solid #dde6ee;
+    border-top-color:var(--navy); animation:spin .8s linear infinite;
+  }
+  @keyframes spin{to{transform:rotate(360deg);}}
 </style>
 </head>
 <body>
@@ -210,6 +248,28 @@
       <h3 id="emptyTitle">Abhi tak koi app add nahi hui</h3>
       <p id="emptyMsg">Admin unlock kar ke pehli app add karein.</p>
     </div>
+  </div>
+</div>
+
+<!-- APP VIEWER — app isi page ke andar iframe mein khulti hai, Back se home par wapas -->
+<div id="appViewer" class="app-hidden">
+  <div class="viewer-bar">
+    <button class="viewer-back" id="viewerBackBtn">← Back</button>
+    <div class="viewer-title">
+      <span class="viewer-icon" id="viewerIcon">🔗</span>
+      <div style="min-width:0;">
+        <div class="viewer-name" id="viewerName"></div>
+        <div class="viewer-host" id="viewerHost"></div>
+      </div>
+    </div>
+    <a class="viewer-external" id="viewerExternalBtn" href="#" target="_blank" rel="noopener noreferrer" title="Naye tab mein kholein">↗ New Tab</a>
+  </div>
+  <div style="position:relative; flex:1 1 auto;">
+    <div class="viewer-loading" id="viewerLoading">
+      <div class="viewer-spinner"></div>
+      <div>App load ho rahi hai...</div>
+    </div>
+    <iframe id="appViewerFrame" title="App view" allow="clipboard-write; fullscreen; geolocation; camera; microphone"></iframe>
   </div>
 </div>
 
@@ -349,10 +409,14 @@ function renderApps(isDataUpdate){
       <p class="tile-name">${escapeHtml(a.name||'')}</p>
       <p class="tile-desc">${escapeHtml(a.desc||'')}</p>
       <div class="tile-host">${escapeHtml(hostOf(a.url||''))}</div>
-      <a class="tile-open" href="${escapeHtml(a.url||'#')}" target="_blank" rel="noopener noreferrer">Open ↗</a>
+      <a class="tile-open" href="${escapeHtml(a.url||'#')}" data-id="${a.id}">Open ↗</a>
     `;
     grid.appendChild(tile);
   });
+  grid.querySelectorAll('.tile-open').forEach(b=> b.addEventListener('click', (e)=>{
+    e.preventDefault();
+    openAppView(b.dataset.id);
+  }));
   if (adminCfg){
     grid.querySelectorAll('.edit-btn').forEach(b=> b.addEventListener('click', ()=> openModal(b.dataset.id)));
     grid.querySelectorAll('.del-btn').forEach(b=> b.addEventListener('click', ()=> deleteApp(b.dataset.id)));
@@ -531,6 +595,40 @@ async function deleteApp(id){
   if (ok){ renderApps(true); showToast('del', e.name); }
   else { apps = backup; }
 }
+
+/* ===================== APP VIEWER (in-page iframe + Back) ===================== */
+function openAppView(id){
+  const a = apps.find(x=>x.id===id);
+  if (!a || !a.url) return;
+  $('viewerIcon').textContent = a.icon || '🔗';
+  $('viewerName').textContent = a.name || '';
+  $('viewerHost').textContent = hostOf(a.url);
+  $('viewerExternalBtn').href = a.url;
+  $('viewerLoading').classList.remove('app-hidden');
+  const frame = $('appViewerFrame');
+  frame.src = a.url;
+  frame.onload = ()=> $('viewerLoading').classList.add('app-hidden');
+  $('appViewer').classList.remove('app-hidden');
+  document.body.style.overflow = 'hidden';
+  // Home par wapas aane ke liye ek history entry push karte hain, taaki
+  // phone/browser ka hardware Back button bhi viewer ko band kar de.
+  if (!history.state || history.state.appViewer !== true){
+    history.pushState({ appViewer:true }, '');
+  }
+}
+function closeAppView(fromPopstate){
+  $('appViewer').classList.add('app-hidden');
+  const frame = $('appViewerFrame');
+  frame.src = 'about:blank';
+  document.body.style.overflow = '';
+  if (!fromPopstate && history.state && history.state.appViewer === true){
+    history.back();
+  }
+}
+$('viewerBackBtn').addEventListener('click', ()=> closeAppView(false));
+window.addEventListener('popstate', ()=>{
+  if (!$('appViewer').classList.contains('app-hidden')) closeAppView(true);
+});
 
 /* ===================== INSTALL PROMPT ===================== */
 let deferredPrompt;

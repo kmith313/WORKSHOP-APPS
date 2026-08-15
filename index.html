@@ -79,12 +79,6 @@
   .icon-btn.del:hover{background:var(--red-light); color:var(--red);}
   .tile-name{font-size:15px;font-weight:800;color:var(--text);margin:0;line-height:1.3;}
   .tile-desc{font-size:12.5px;color:var(--text-mute);margin:0;line-height:1.5;min-height:18px;}
-  .tile-open{
-    margin-top:4px; text-decoration:none; text-align:center; background:var(--steel-light);
-    color:var(--navy); font-weight:700; font-size:12.5px; padding:9px; border-radius:9px;
-    transition:background .15s ease;
-  }
-  .tile-open:hover{background:#dbe6ee;}
 
   .empty-state{text-align:center; padding:60px 20px; color:var(--text-mute);}
   .empty-state .big{font-size:40px;margin-bottom:10px;}
@@ -396,10 +390,13 @@ function renderApps(isDataUpdate){
   filtered.slice().sort((a,b)=> (a.name||'').localeCompare(b.name||'')).forEach(a=>{
     const tile = document.createElement('div');
     tile.className = 'app-tile' + (isDataUpdate ? ' tile-enter' : '');
+    tile.style.cursor = 'pointer';
+    tile.dataset.id = a.id;
+    tile.title = 'Kholein';
     const color = colorFor(a.name||a.id||'x');
     tile.innerHTML = `
       <div class="tile-top">
-        <div class="tile-icon" style="background:${color};cursor:pointer;" data-id="${a.id}" title="Kholein">${a.icon || '🔗'}</div>
+        <div class="tile-icon" style="background:${color}">${a.icon || '🔗'}</div>
         ${adminCfg ? `<div class="tile-admin-actions">
           <button class="icon-btn edit-btn" data-id="${a.id}" title="Edit">✏️</button>
           <button class="icon-btn del del-btn" data-id="${a.id}" title="Delete">🗑</button>
@@ -407,20 +404,16 @@ function renderApps(isDataUpdate){
       </div>
       <p class="tile-name">${escapeHtml(a.name||'')}</p>
       <p class="tile-desc">${escapeHtml(a.desc||'')}</p>
-      <a class="tile-open" href="${escapeHtml(a.url||'#')}" data-id="${a.id}">Open ↗</a>
     `;
     grid.appendChild(tile);
   });
-  grid.querySelectorAll('.tile-open').forEach(b=> b.addEventListener('click', (e)=>{
-    e.preventDefault();
-    openAppView(b.dataset.id);
-  }));
-  grid.querySelectorAll('.tile-icon').forEach(b=> b.addEventListener('click', ()=>{
-    openAppView(b.dataset.id);
+  grid.querySelectorAll('.app-tile').forEach(t=> t.addEventListener('click', (e)=>{
+    if (e.target.closest('.tile-admin-actions')) return;
+    openAppView(t.dataset.id);
   }));
   if (adminCfg){
-    grid.querySelectorAll('.edit-btn').forEach(b=> b.addEventListener('click', ()=> openModal(b.dataset.id)));
-    grid.querySelectorAll('.del-btn').forEach(b=> b.addEventListener('click', ()=> deleteApp(b.dataset.id)));
+    grid.querySelectorAll('.edit-btn').forEach(b=> b.addEventListener('click', (e)=>{ e.stopPropagation(); openModal(b.dataset.id); }));
+    grid.querySelectorAll('.del-btn').forEach(b=> b.addEventListener('click', (e)=>{ e.stopPropagation(); deleteApp(b.dataset.id); }));
   }
 }
 $('searchInput').addEventListener('input', ()=> renderApps(false));

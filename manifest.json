@@ -1,6 +1,6 @@
 {
-  "name": "App Repository — EWD Azamgarh",
-  "short_name": "App Repo",
+  "name": "Workshop Apps",
+  "short_name": "workshop",
   "description": "Directory of all EWD Azamgarh web apps / PWAs with shared links",
   "start_url": "./index.html",
   "display": "standalone",

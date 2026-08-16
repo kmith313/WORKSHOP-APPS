@@ -85,6 +85,19 @@
   .empty-state h3{margin:0 0 6px;color:var(--text);font-size:16px;}
   .empty-state p{margin:0;font-size:13px;}
 
+  @media (max-width: 480px) {
+    .app-grid, .skeleton-grid { grid-template-columns: repeat(2, 1fr); gap: 10px; }
+    .app-tile { padding: 10px; gap: 6px; border-radius: 14px; }
+    .tile-icon { width: 38px; height: 38px; border-radius: 10px; font-size: 18px; }
+    .tile-name { font-size: 12.5px; }
+    .tile-desc { font-size: 10.5px; min-height: 0; -webkit-line-clamp: 2; display: -webkit-box; -webkit-box-orient: vertical; overflow: hidden; }
+    .icon-btn { width: 22px; height: 22px; font-size: 10px; }
+    .skeleton-tile { height: 100px; padding: 10px; }
+  }
+  @media (max-width: 340px) {
+    .app-grid, .skeleton-grid { grid-template-columns: repeat(2, 1fr); gap: 8px; }
+  }
+
   .skeleton-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:16px;}
   .skeleton-tile{background:var(--card);border-radius:var(--radius);box-shadow:var(--shadow);padding:18px;height:150px;position:relative;overflow:hidden;}
   .skeleton-tile::after{

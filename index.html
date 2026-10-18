@@ -181,7 +181,10 @@
   }
   .field input::placeholder{color:rgba(255,255,255,.4);}
   .field input:focus{border-color:#7fb8ff; background:rgba(255,255,255,.16);}
-  .emoji-row{display:flex; gap:7px; flex-wrap:wrap;}
+  .emoji-row{max-height:210px; overflow-y:auto; padding-right:4px; border-radius:14px; background:rgba(255,255,255,.05); padding:8px; -webkit-overflow-scrolling:touch;}
+  .emoji-cat{font-size:10.5px; font-weight:800; letter-spacing:.6px; text-transform:uppercase; color:var(--mute); margin:8px 2px 6px;}
+  .emoji-cat:first-child{margin-top:0;}
+  .emoji-wrap{display:flex; gap:7px; flex-wrap:wrap;}
   .emoji-pick{width:38px; height:38px; border-radius:11px; border:1px solid rgba(255,255,255,.2); background:rgba(255,255,255,.08); font-size:18px; cursor:pointer; display:flex; align-items:center; justify-content:center; transition:transform .2s var(--spring);}
   .emoji-pick:hover{transform:scale(1.12);}
   .emoji-pick.active{border-color:#7fb8ff; background:rgba(127,184,255,.3); transform:scale(1.1);}
@@ -259,6 +262,7 @@
     <div class="field"><label>Link (URL)</label><input type="text" id="fUrl" placeholder="https://..." autocapitalize="off" autocomplete="off"></div>
     <div class="field"><label>Short Description (optional)</label><input type="text" id="fDesc" placeholder="e.g. Daily stock tracker"></div>
     <div class="field"><label>Choose Icon</label><div class="emoji-row" id="emojiRow"></div></div>
+    <div class="field"><label>Or type any emoji</label><input type="text" id="fEmoji" placeholder="Paste or type any emoji, e.g. 🏗️" autocomplete="off"></div>
     <div class="actions">
       <button class="btn cancel" id="modalCancelBtn" type="button">Cancel</button>
       <button class="btn save" id="modalSaveBtn" type="button">Save</button>
@@ -298,7 +302,17 @@ function $(id){ return document.getElementById(id); }
 const DATA_FILE = 'apps.json';
 const CACHE_KEY = 'ws_apps_cache_v1';
 const GITHUB_API = 'https://api.github.com';
-const EMOJI_CHOICES = ["🔗","📊","📦","🛠️","⚡","🧾","📋","🗂️","💧","🔋","📈","🧮","🖥️","📱","🛢️"];
+const EMOJI_GROUPS = {
+  'Popular':   ["🔗","📊","📦","🛠️","⚡","🧾","📋","🗂️","💧","🔋","📈","🧮","🖥️","📱","🛢️","📌"],
+  'Electrical':["⚡","🔌","💡","🔋","🪫","🏭","🏗️","🗼","🔦","🧲","☀️","🌩️","🧯","🛑","🚨","📡"],
+  'Workshop':  ["🛠️","🔧","🔩","⚙️","🪛","🔨","⛏️","🪚","🧰","🪜","🚧","🦺","👷","🚚","🚜","🛞"],
+  'Documents': ["📋","🧾","📄","📑","📝","📒","📚","🗂️","📁","🗃️","🗄️","📎","🖇️","📮","📥","🖨️"],
+  'Data':      ["📊","📈","📉","🧮","💹","🔍","🔎","🧠","🗒️","📅","🗓️","⏱️","⏰","🧭","🎯","🏷️"],
+  'People':    ["👤","👥","🧑‍💼","🧑‍🔧","🤝","🙋","📞","☎️","💬","✉️","📧","🔔","🏢","🏠","🏦","🏛️"],
+  'Money':     ["💰","💵","💳","🏧","🧾","🪙","💸","📦","🛒","🏪","🚛","📋","🔐","🔑","🛡️","✅"],
+  'Other':     ["🌐","💧","🌳","🔥","❄️","🌍","🗺️","📍","🧪","🔬","🩺","🎓","⭐","❤️","🚀","🎨"]
+};
+const EMOJI_CHOICES = [...new Set(Object.values(EMOJI_GROUPS).flat())];
 const GRADIENTS = [
   ['#ff9a5a','#f2505d'], ['#5ec8ff','#2b6fe0'], ['#5eeaa6','#0fa36b'], ['#ffd45e','#f29a1b'],
   ['#c493ff','#7a4fe0'], ['#ff7eb3','#d6336c'], ['#6be3e3','#0e8a99'], ['#9aa8ff','#4a56d6']
@@ -330,14 +344,25 @@ function toB64(str){
 }
 
 /* ===================== CLOCK ===================== */
+const IST = 'Asia/Kolkata';   // UTC+05:30, independent of the device's timezone setting
 function tick(){
-  const d = new Date();
-  let h = d.getHours(); const m = String(d.getMinutes()).padStart(2,'0');
-  const ap = h >= 12 ? 'PM' : 'AM'; h = h % 12 || 12;
-  $('clock').innerHTML = `${h}:${m}<small>${ap}</small>`;
-  $('date').textContent = d.toLocaleDateString('en-IN', { weekday:'long', day:'numeric', month:'long' });
+  const now = new Date();
+  const parts = new Intl.DateTimeFormat('en-IN', { timeZone: IST, hour:'numeric', minute:'2-digit', hour12:true }).formatToParts(now);
+  const get = t => (parts.find(p => p.type === t) || {}).value || '';
+  $('clock').innerHTML = `${get('hour')}:${get('minute')}<small>${get('dayPeriod').toUpperCase()}</small>`;
+  $('date').textContent = new Intl.DateTimeFormat('en-IN', { timeZone: IST, weekday:'long', day:'numeric', month:'long' }).format(now);
 }
-tick(); setInterval(tick, 15000);
+let clockTimer = null;
+function startClock(){
+  tick(); clearInterval(clockTimer);
+  clockTimer = setInterval(tick, 5000);
+}
+startClock();
+// Browsers pause timers when the page is hidden or restored from back/forward cache; resync instantly on return.
+document.addEventListener('visibilitychange', ()=>{ if (!document.hidden) startClock(); });
+window.addEventListener('pageshow', startClock);
+window.addEventListener('focus', startClock);
+window.addEventListener('online', startClock);
 
 /* ===================== TOASTS ===================== */
 const TOAST_CONFIG = {
@@ -604,14 +629,22 @@ async function saveAppsToGithub(message){
 /* ===================== ADD / EDIT SHEET ===================== */
 function buildEmojiRow(){
   const row = $('emojiRow'); row.innerHTML = '';
-  EMOJI_CHOICES.forEach(em=>{
+  const mk = em => {
     const b = document.createElement('button');
-    b.type = 'button'; b.className = 'emoji-pick' + (em === selectedEmoji ? ' active' : '');
-    b.textContent = em;
-    b.addEventListener('click', ()=>{ selectedEmoji = em; row.querySelectorAll('.emoji-pick').forEach(x=>x.classList.remove('active')); b.classList.add('active'); });
-    row.appendChild(b);
+    b.type = 'button'; b.className = 'emoji-pick' + (em === selectedEmoji ? ' active' : ''); b.textContent = em;
+    b.addEventListener('click', ()=>{ selectedEmoji = em; $('fEmoji').value = ''; row.querySelectorAll('.emoji-pick').forEach(x=>x.classList.remove('active')); b.classList.add('active'); });
+    return b;
+  };
+  Object.entries(EMOJI_GROUPS).forEach(([name, list])=>{
+    const h = document.createElement('div'); h.className = 'emoji-cat'; h.textContent = name; row.appendChild(h);
+    const wrap = document.createElement('div'); wrap.className = 'emoji-wrap';
+    list.forEach(em => wrap.appendChild(mk(em))); row.appendChild(wrap);
   });
 }
+$('fEmoji').addEventListener('input', e=>{
+  const v = e.target.value.trim();
+  if (v){ selectedEmoji = Array.from(v).slice(0, 3).join(''); $('emojiRow').querySelectorAll('.emoji-pick').forEach(x=>x.classList.remove('active')); }
+});
 function openModal(id){
   editingId = id || null;
   const ex = editingId ? apps.find(a=>a.id === editingId) : null;
@@ -620,6 +653,7 @@ function openModal(id){
   $('fUrl').value = ex ? ex.url : '';
   $('fDesc').value = ex ? (ex.desc || '') : '';
   selectedEmoji = ex ? (ex.icon || EMOJI_CHOICES[0]) : EMOJI_CHOICES[0];
+  $('fEmoji').value = '';
   buildEmojiRow();
   $('modalBackdrop').classList.remove('app-hidden');
   setTimeout(()=> $('fName').focus(), 80);

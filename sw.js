@@ -1,7 +1,7 @@
-const CACHE = 'app-repo-v1';
-const ASSETS = ['./index.html', './manifest.json', './icon-192.png', './icon-512.png'];
-// apps.json is intentionally NOT cached here — it must always be fetched fresh
-// from the network so newly added apps show up immediately for every viewer.
+const CACHE = 'workshop-apps-v2';
+const ASSETS = ['./', './index.html', './manifest.json', './icon-192.png', './icon-512.png'];
+// apps.json is intentionally NOT cached here: it must always come fresh from the network
+// so newly added apps show up immediately for every viewer.
 
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(ASSETS)));
@@ -16,10 +16,17 @@ self.addEventListener('activate', e => {
 });
 
 self.addEventListener('fetch', e => {
-  // Never intercept the apps data file or GitHub API calls — always go to network
-  // so newly added/edited/deleted apps show up immediately.
-  if (e.request.url.includes('apps.json') || e.request.url.includes('api.github.com')) return;
+  const req = e.request;
+  const url = new URL(req.url);
+  // Only handle same-origin GETs. Everything else (other apps, GitHub API, apps.json) goes straight to network.
+  if (req.method !== 'GET' || url.origin !== location.origin || url.pathname.endsWith('apps.json')) return;
+  // Stale-while-revalidate: show the cached copy instantly, refresh it in the background.
   e.respondWith(
-    caches.match(e.request).then(cached => cached || fetch(e.request).catch(() => cached))
+    caches.open(CACHE).then(cache =>
+      cache.match(req).then(cached => {
+        const network = fetch(req).then(res => { if (res && res.ok) cache.put(req, res.clone()); return res; }).catch(() => cached);
+        return cached || network;
+      })
+    )
   );
 });

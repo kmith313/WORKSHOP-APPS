@@ -1,320 +1,292 @@
 <!DOCTYPE html>
-<html lang="hi">
+<html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>App Repository — EWD Azamgarh</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Workshop Apps</title>
 <link rel="manifest" href="manifest.json">
-<meta name="theme-color" content="#16324a">
+<meta name="theme-color" content="#0b1d33">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Workshop Apps">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <link rel="icon" href="icon-192.png">
 <link rel="apple-touch-icon" href="icon-192.png">
 <style>
   :root{
-    --navy:#16324a; --navy-2:#1f4a6b; --steel:#5b7a94; --steel-light:#e7edf2;
-    --amber:#c9822c; --amber-light:#fbeedb;
-    --green:#2f8f5b; --green-light:#e6f5ec;
-    --red:#c0392b; --red-light:#fbe9e7;
-    --bg:#f4f6f8; --card:#ffffff; --text:#1c2b38; --text-mute:#6b7c8a;
-    --radius:14px; --radius-sm:9px;
-    --shadow:0 2px 10px rgba(22,50,74,.08), 0 1px 2px rgba(22,50,74,.06);
+    --safe-t:env(safe-area-inset-top,0px); --safe-b:env(safe-area-inset-bottom,0px);
+    --text:#fff; --mute:rgba(255,255,255,.68);
+    --glass:rgba(255,255,255,.14); --glass-b:rgba(255,255,255,.28);
+    --spring:cubic-bezier(.34,1.56,.64,1); --ease:cubic-bezier(.2,.8,.2,1);
+    --icon:68px;
   }
-  *{box-sizing:border-box;}
-  body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;background:var(--bg);color:var(--text);-webkit-font-smoothing:antialiased;}
-  .wrap{max-width:1100px;margin:0 auto;padding:0 0 60px;}
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+  html,body{height:100%;}
+  body{
+    margin:0; color:var(--text); overflow-x:hidden;
+    font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display","Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    -webkit-font-smoothing:antialiased; background:#0b1d33;
+  }
   .app-hidden{display:none !important;}
 
-  .topbar{
-    background:linear-gradient(135deg,var(--navy),var(--navy-2));
-    color:#fff; padding:22px 20px 26px; border-radius:0 0 20px 20px;
-    display:flex; justify-content:space-between; align-items:flex-start; gap:16px; flex-wrap:wrap;
-  }
-  .topbar h1{margin:0;font-size:22px;font-weight:800;letter-spacing:.2px;}
-  .topbar p{margin:6px 0 0;font-size:12.5px;color:#c8d8e4;font-weight:500;}
-  .top-right{display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
-  .install-btn, .ghost-btn{
-    background:rgba(255,255,255,.14); color:#fff; border:1px solid rgba(255,255,255,.35);
-    border-radius:20px; padding:8px 14px; font-size:12.5px; font-weight:700; cursor:pointer;
-  }
-  .admin-badge{display:flex;align-items:center;gap:6px;background:rgba(255,255,255,.16);border-radius:20px;padding:6px 12px;font-size:12px;font-weight:700;}
-  .admin-badge .dot{width:7px;height:7px;border-radius:50%;background:var(--green);box-shadow:0 0 0 3px rgba(47,143,91,.25);}
+  /* ============ WALLPAPER (GPU-only animation, no blur filters) ============ */
+  .wallpaper{position:fixed; inset:0; z-index:0; overflow:hidden;
+    background:linear-gradient(160deg,#0b1d33 0%,#12395c 45%,#0d5a6b 100%);}
+  .blob{position:absolute; width:90vmax; height:90vmax; border-radius:50%; will-change:transform; opacity:.85;}
+  .b1{left:-35vmax; top:-35vmax; background:radial-gradient(circle,rgba(255,153,102,.55),transparent 62%); animation:drift1 22s ease-in-out infinite alternate;}
+  .b2{right:-40vmax; top:10vh; background:radial-gradient(circle,rgba(90,140,255,.55),transparent 62%); animation:drift2 26s ease-in-out infinite alternate;}
+  .b3{left:-20vmax; bottom:-50vmax; background:radial-gradient(circle,rgba(0,214,170,.45),transparent 62%); animation:drift3 30s ease-in-out infinite alternate;}
+  @keyframes drift1{to{transform:translate3d(18vmax,14vmax,0) scale(1.1);}}
+  @keyframes drift2{to{transform:translate3d(-20vmax,18vmax,0) scale(.92);}}
+  @keyframes drift3{to{transform:translate3d(22vmax,-16vmax,0) scale(1.12);}}
 
-  /* ===================== MAIN CONTENT ===================== */
-  #app{padding:26px 20px 0;}
-  .toolbar{display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin-bottom:22px;}
-  .search-box{
-    flex:1 1 260px; display:flex; align-items:center; gap:8px;
-    background:var(--card); border:1px solid #e2e8ee; border-radius:var(--radius-sm);
-    padding:10px 14px; box-shadow:var(--shadow);
+  .screen{
+    position:relative; z-index:1; min-height:100%; max-width:760px; margin:0 auto;
+    padding:calc(var(--safe-t) + 34px) 22px calc(var(--safe-b) + 130px);
+    transition:transform .5s var(--ease), opacity .4s ease, filter .4s ease;
   }
-  .search-box input{border:none;outline:none;flex:1;font-size:14px;background:transparent;color:var(--text);}
-  .search-box svg{flex:0 0 auto;opacity:.5;}
-  .add-btn{
-    background:var(--navy); color:#fff; border:none; border-radius:var(--radius-sm);
-    padding:11px 20px; font-size:13.5px; font-weight:700; cursor:pointer; white-space:nowrap;
-    box-shadow:var(--shadow); transition:transform .15s ease, background .15s ease;
-  }
-  .add-btn:hover{background:var(--navy-2); transform:translateY(-1px);}
+  body.launching .screen{transform:scale(.9); opacity:0; filter:blur(2px);}
+  body.launching .dock{transform:translate(-50%,120px); opacity:0;}
 
-  .app-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:16px;}
-  .app-tile{
-    background:var(--card); border-radius:var(--radius); box-shadow:var(--shadow);
-    padding:18px; display:flex; flex-direction:column; gap:10px; position:relative;
-    transition:transform .15s ease, box-shadow .15s ease;
-    border:1px solid #eef2f6;
+  /* ============ HEADER / CLOCK ============ */
+  .hero{text-align:center; margin-bottom:34px; animation:heroIn .7s var(--ease) both;}
+  @keyframes heroIn{from{opacity:0; transform:translateY(-14px);}to{opacity:1; transform:none;}}
+  .clock{font-size:64px; font-weight:700; letter-spacing:-2px; line-height:1; text-shadow:0 4px 24px rgba(0,0,0,.25);}
+  .clock small{font-size:18px; font-weight:700; letter-spacing:0; margin-left:6px; opacity:.8;}
+  .date{margin-top:8px; font-size:15px; font-weight:600; color:var(--mute);}
+  .brand{
+    display:inline-flex; align-items:center; gap:8px; margin-top:18px; padding:8px 16px;
+    background:var(--glass); border:1px solid var(--glass-b); border-radius:999px;
+    -webkit-backdrop-filter:blur(18px) saturate(160%); backdrop-filter:blur(18px) saturate(160%);
+    font-size:13px; font-weight:700; letter-spacing:.3px;
   }
-  .app-tile.tile-enter{animation:tileIn .35s ease both;}
-  .app-tile:hover{transform:translateY(-3px); box-shadow:0 10px 24px rgba(22,50,74,.12);}
-  @keyframes tileIn{from{opacity:0;transform:translateY(10px) scale(.97);}to{opacity:1;transform:translateY(0) scale(1);}}
-  .tile-top{display:flex;align-items:flex-start;justify-content:space-between;gap:8px;}
-  .tile-icon{
-    width:46px; height:46px; border-radius:12px; display:flex; align-items:center; justify-content:center;
-    font-size:22px; flex:0 0 auto; color:#fff; font-weight:700;
-  }
-  .tile-admin-actions{display:flex;gap:4px;}
-  .icon-btn{
-    width:26px; height:26px; border-radius:7px; border:none; background:var(--steel-light);
-    color:var(--steel); font-size:12px; cursor:pointer; display:flex; align-items:center; justify-content:center;
-  }
-  .icon-btn:hover{background:#dde6ee;}
-  .icon-btn.del:hover{background:var(--red-light); color:var(--red);}
-  .tile-name{font-size:15px;font-weight:800;color:var(--text);margin:0;line-height:1.3;}
-  .tile-desc{font-size:12.5px;color:var(--text-mute);margin:0;line-height:1.5;min-height:18px;}
+  .brand i{width:7px; height:7px; border-radius:50%; background:#34e39a; box-shadow:0 0 0 4px rgba(52,227,154,.22); font-style:normal;}
 
-  .empty-state{text-align:center; padding:60px 20px; color:var(--text-mute);}
-  .empty-state .big{font-size:40px;margin-bottom:10px;}
-  .empty-state h3{margin:0 0 6px;color:var(--text);font-size:16px;}
-  .empty-state p{margin:0;font-size:13px;}
+  /* ============ APP GRID (iOS home screen) ============ */
+  .grid{display:grid; grid-template-columns:repeat(4,1fr); gap:26px 8px; justify-items:center;}
+  @media(min-width:560px){ :root{--icon:80px;} .grid{grid-template-columns:repeat(5,1fr); gap:32px 12px;} }
+  @media(min-width:760px){ :root{--icon:88px;} }
+  @media(max-width:350px){ :root{--icon:60px;} }
 
-  @media (max-width: 480px) {
-    .app-grid, .skeleton-grid { grid-template-columns: repeat(2, 1fr); gap: 10px; }
-    .app-tile { padding: 10px; gap: 6px; border-radius: 14px; }
-    .tile-icon { width: 38px; height: 38px; border-radius: 10px; font-size: 18px; }
-    .tile-name { font-size: 12.5px; }
-    .tile-desc { font-size: 10.5px; min-height: 0; -webkit-line-clamp: 2; display: -webkit-box; -webkit-box-orient: vertical; overflow: hidden; }
-    .icon-btn { width: 22px; height: 22px; font-size: 10px; }
-    .skeleton-tile { height: 100px; padding: 10px; }
+  .tile{
+    position:relative; display:flex; flex-direction:column; align-items:center; gap:8px;
+    width:100%; max-width:104px; text-decoration:none; color:inherit; outline:none;
+    -webkit-user-select:none; user-select:none; -webkit-touch-callout:none;
+    opacity:0; animation:tileIn .6s var(--spring) forwards; animation-delay:calc(var(--i,0) * 55ms + 150ms);
   }
-  @media (max-width: 340px) {
-    .app-grid, .skeleton-grid { grid-template-columns: repeat(2, 1fr); gap: 8px; }
+  @keyframes tileIn{from{opacity:0; transform:translateY(26px) scale(.6);}to{opacity:1; transform:none;}}
+  .icon{
+    position:relative; width:var(--icon); height:var(--icon); border-radius:22.4%;
+    display:flex; align-items:center; justify-content:center; font-size:calc(var(--icon) * .5);
+    box-shadow:0 8px 18px rgba(0,0,0,.28), inset 0 1px 0 rgba(255,255,255,.45), inset 0 -2px 6px rgba(0,0,0,.12);
+    transition:transform .28s var(--spring), box-shadow .28s ease;
+  }
+  .icon::after{ /* soft gloss */
+    content:''; position:absolute; inset:0; border-radius:inherit; pointer-events:none;
+    background:linear-gradient(180deg,rgba(255,255,255,.34),rgba(255,255,255,0) 52%);
+  }
+  .icon span{filter:drop-shadow(0 2px 3px rgba(0,0,0,.25)); position:relative; z-index:1; line-height:1;}
+  .tile:hover .icon{transform:translateY(-4px) scale(1.06); box-shadow:0 16px 28px rgba(0,0,0,.34), inset 0 1px 0 rgba(255,255,255,.45);}
+  .tile:active .icon{transform:scale(.88); transition-duration:.12s;}
+  .tile:focus-visible .icon{box-shadow:0 0 0 3px #fff, 0 8px 18px rgba(0,0,0,.3);}
+  .label{
+    font-size:12px; font-weight:600; text-align:center; line-height:1.25; width:100%;
+    text-shadow:0 1px 6px rgba(0,0,0,.45);
+    display:-webkit-box; -webkit-line-clamp:3; -webkit-box-orient:vertical; overflow:hidden; word-break:break-word; hyphens:auto;
   }
 
-  .skeleton-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:16px;}
-  .skeleton-tile{background:var(--card);border-radius:var(--radius);box-shadow:var(--shadow);padding:18px;height:150px;position:relative;overflow:hidden;}
-  .skeleton-tile::after{
-    content:'';position:absolute;inset:0;
-    background:linear-gradient(90deg,transparent,rgba(22,50,74,.06),transparent);
-    animation:shimmer 1.3s infinite;
-  }
-  @keyframes shimmer{from{transform:translateX(-100%);}to{transform:translateX(100%);}}
+  /* add tile (admin) */
+  .tile.add .icon{background:var(--glass); border:1.5px dashed rgba(255,255,255,.55); box-shadow:none; font-size:calc(var(--icon) * .5); font-weight:300;
+    -webkit-backdrop-filter:blur(14px); backdrop-filter:blur(14px);}
+  .tile.add .icon::after{display:none;}
 
-  /* ===================== MODALS ===================== */
-  .modal-backdrop{
-    position:fixed;inset:0;background:rgba(16,28,38,.45);display:flex;align-items:center;justify-content:center;
-    z-index:5000; padding:16px; animation:fade .2s ease;
+  /* edit (jiggle) mode */
+  body.editing .tile:not(.add){animation:tileIn .01s forwards, jiggle .28s ease-in-out infinite alternate; animation-delay:0s, calc(var(--i,0) * -37ms);}
+  @keyframes jiggle{from{transform:rotate(-2deg) translateY(.5px);}to{transform:rotate(2deg) translateY(-.5px);}}
+  .badge{
+    position:absolute; top:-7px; left:calc(50% - var(--icon)/2 - 7px); width:24px; height:24px; border-radius:50%;
+    background:#8e8e93; color:#fff; border:none; font-size:18px; line-height:22px; font-weight:700; cursor:pointer; z-index:3;
+    display:none; align-items:center; justify-content:center; box-shadow:0 2px 6px rgba(0,0,0,.35); padding:0;
+    animation:badgePop .3s var(--spring);
   }
-  .modal{
-    background:var(--card); border-radius:var(--radius); width:100%; max-width:420px;
-    padding:24px; box-shadow:0 20px 60px rgba(0,0,0,.25); animation:modalIn .25s cubic-bezier(.34,1.56,.64,1);
-  }
-  @keyframes modalIn{from{opacity:0;transform:scale(.94) translateY(8px);}to{opacity:1;transform:scale(1) translateY(0);}}
-  @keyframes fade{from{opacity:0;}to{opacity:1;}}
-  .modal h3{margin:0 0 16px;font-size:17px;color:var(--navy);}
-  .modal .sub{margin:-10px 0 16px;font-size:12px;color:var(--text-mute);line-height:1.6;}
-  .field{margin-bottom:14px;}
-  .field label{display:block;font-size:11.5px;font-weight:700;color:var(--text-mute);text-transform:uppercase;letter-spacing:.4px;margin-bottom:5px;}
-  .field input, .field textarea{
-    width:100%; border:1px solid #dde6ee; border-radius:9px; padding:10px 12px; font-size:14px;
-    font-family:inherit; outline:none; color:var(--text); background:#fbfcfd;
-  }
-  .field input:focus, .field textarea:focus{border-color:var(--navy);}
-  .emoji-row{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px;}
-  .emoji-pick{
-    width:34px;height:34px;border-radius:8px;border:1px solid #dde6ee;background:#fff;
-    font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;
-  }
-  .emoji-pick.active{border-color:var(--navy);background:var(--steel-light);}
-  .modal-actions{display:flex;gap:10px;justify-content:flex-end;margin-top:18px;}
-  .btn-cancel{background:#eef2f6;color:var(--text);border:none;border-radius:9px;padding:10px 18px;font-weight:700;font-size:13.5px;cursor:pointer;}
-  .btn-save{background:var(--navy);color:#fff;border:none;border-radius:9px;padding:10px 18px;font-weight:700;font-size:13.5px;cursor:pointer;}
-  .btn-save:hover{background:var(--navy-2);}
-  .btn-save[disabled]{opacity:.6;cursor:default;}
-  .link-btn{background:none;border:none;color:var(--red);font-size:12px;font-weight:700;cursor:pointer;text-decoration:underline;padding:0;}
+  body.editing .tile:not(.add) .badge{display:flex;}
+  @keyframes badgePop{from{transform:scale(0);}to{transform:scale(1);}}
 
-  /* ===================== TOASTS ===================== */
-  #toastStack{
-    position:fixed; left:50%; bottom:26px; transform:translateX(-50%);
-    z-index:9999; display:flex; flex-direction:column; align-items:center; gap:10px;
-    pointer-events:none; width:100%; max-width:380px; padding:0 14px;
-  }
-  .toast{
-    pointer-events:auto; display:flex; align-items:center; gap:12px;
-    background:#ffffff; border-radius:12px; padding:12px 16px;
-    box-shadow:0 10px 30px rgba(22,50,74,.22), 0 2px 8px rgba(22,50,74,.12);
-    border-left:5px solid var(--navy); width:100%;
-    animation: toastIn .38s cubic-bezier(.34,1.56,.64,1) forwards;
-    font-size:13.5px; font-weight:600; color:var(--text);
-  }
-  .toast.leaving{ animation: toastOut .32s ease forwards; }
-  .toast .toast-icon{
-    flex:0 0 auto; width:30px; height:30px; border-radius:50%;
-    display:flex; align-items:center; justify-content:center;
-    font-size:15px; color:#fff; background:var(--navy);
-    animation: toastPop .45s .05s cubic-bezier(.34,1.56,.64,1) both;
-  }
-  .toast .toast-body{display:flex; flex-direction:column; gap:1px; min-width:0;}
-  .toast .toast-title{font-size:12px; font-weight:800; text-transform:uppercase; letter-spacing:.4px;}
-  .toast .toast-msg{font-size:12.5px; color:var(--text-mute); font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
-  .toast.add{border-left-color:var(--green);} .toast.add .toast-icon{background:var(--green);} .toast.add .toast-title{color:var(--green);}
-  .toast.update{border-left-color:var(--amber);} .toast.update .toast-icon{background:var(--amber);} .toast.update .toast-title{color:#8a4a13;}
-  .toast.del{border-left-color:var(--red);} .toast.del .toast-icon{background:var(--red); animation: toastShake .5s .05s both;} .toast.del .toast-title{color:var(--red);}
-  .toast.err{border-left-color:var(--red);} .toast.err .toast-icon{background:var(--red);} .toast.err .toast-title{color:var(--red);}
-  @keyframes toastIn{from{opacity:0; transform:translateY(24px) scale(.92);} to{opacity:1; transform:translateY(0) scale(1);}}
-  @keyframes toastOut{from{opacity:1; transform:translateY(0) scale(1);} to{opacity:0; transform:translateY(-14px) scale(.94);}}
-  @keyframes toastPop{0%{transform:scale(0) rotate(-30deg); opacity:0;} 60%{transform:scale(1.25) rotate(6deg); opacity:1;} 100%{transform:scale(1) rotate(0deg); opacity:1;}}
-  @keyframes toastShake{0%,100%{transform:translateX(0) rotate(0);} 20%{transform:translateX(-3px) rotate(-8deg);} 40%{transform:translateX(3px) rotate(8deg);} 60%{transform:translateX(-2px) rotate(-5deg);} 80%{transform:translateX(2px) rotate(5deg);}}
+  .empty{text-align:center; padding:50px 20px; color:var(--mute); animation:heroIn .6s var(--ease) both;}
+  .empty .big{font-size:52px; margin-bottom:10px;}
+  .empty h3{margin:0 0 6px; color:#fff; font-size:18px;}
+  .empty p{margin:0; font-size:13.5px;}
 
-  @media(max-width:520px){
-    .topbar{padding:18px 16px 22px;}
-    .topbar h1{font-size:19px;}
-    #toastStack{max-width:calc(100% - 24px);}
+  /* ============ DOCK ============ */
+  .dock{
+    position:fixed; left:50%; bottom:calc(var(--safe-b) + 18px); transform:translateX(-50%); z-index:20;
+    display:flex; gap:16px; padding:12px 18px;
+    background:var(--glass); border:1px solid var(--glass-b); border-radius:30px;
+    -webkit-backdrop-filter:blur(26px) saturate(180%); backdrop-filter:blur(26px) saturate(180%);
+    box-shadow:0 12px 40px rgba(0,0,0,.28);
+    transition:transform .5s var(--ease), opacity .4s ease;
+    animation:dockIn .8s .35s var(--spring) both;
   }
+  @keyframes dockIn{from{opacity:0; transform:translate(-50%,90px);}to{opacity:1; transform:translate(-50%,0);}}
+  .dock-btn{
+    display:flex; flex-direction:column; align-items:center; gap:4px; background:none; border:none; color:#fff; cursor:pointer; padding:0; font-family:inherit;
+  }
+  .dock-ico{
+    width:50px; height:50px; border-radius:14px; display:flex; align-items:center; justify-content:center; font-size:23px;
+    background:linear-gradient(160deg,rgba(255,255,255,.3),rgba(255,255,255,.1)); border:1px solid rgba(255,255,255,.25);
+    transition:transform .28s var(--spring);
+  }
+  .dock-btn:hover .dock-ico{transform:translateY(-5px) scale(1.1);}
+  .dock-btn:active .dock-ico{transform:scale(.88); transition-duration:.1s;}
+  .dock-btn span.t{font-size:10.5px; font-weight:700; color:var(--mute);}
+  .dock-btn.on .dock-ico{background:linear-gradient(160deg,#34e39a,#0fa36b); border-color:transparent;}
 
-  /* ===================== APP VIEWER (in-page iframe) ===================== */
-  #appViewer{
-    position:fixed; inset:0; background:var(--bg); z-index:4000;
-    display:flex; flex-direction:column;
+  /* ============ LAUNCH OVERLAY ============ */
+  .launch{
+    position:fixed; z-index:9000; display:flex; align-items:center; justify-content:center;
+    transition:left .5s var(--ease), top .5s var(--ease), width .5s var(--ease), height .5s var(--ease), border-radius .5s var(--ease);
+    overflow:hidden;
   }
-  .viewer-bar{
-    background:linear-gradient(135deg,var(--navy),var(--navy-2)); color:#fff;
-    display:flex; align-items:center; gap:12px; padding:10px 14px;
-    box-shadow:0 2px 10px rgba(22,50,74,.18); flex:0 0 auto;
+  .launch .em{font-size:44px; transition:transform .5s var(--ease), opacity .35s ease .15s; filter:drop-shadow(0 3px 6px rgba(0,0,0,.3));}
+  .launch.full .em{transform:scale(2.2); opacity:.95;}
+  .launch .spin{
+    position:absolute; bottom:calc(var(--safe-b) + 60px); left:50%; margin-left:-16px; width:32px; height:32px; border-radius:50%;
+    border:3px solid rgba(255,255,255,.3); border-top-color:#fff; animation:spin .8s linear infinite; opacity:0; transition:opacity .3s ease .35s;
   }
-  .viewer-back{
-    display:flex; align-items:center; gap:6px; background:rgba(255,255,255,.14);
-    border:1px solid rgba(255,255,255,.35); color:#fff; border-radius:20px;
-    padding:8px 14px; font-size:13px; font-weight:700; cursor:pointer; flex:0 0 auto;
-  }
-  .viewer-back:hover{background:rgba(255,255,255,.24);}
-  .viewer-title{display:flex; align-items:center; gap:8px; min-width:0; flex:1 1 auto;}
-  .viewer-icon{font-size:18px; flex:0 0 auto;}
-  .viewer-name{font-size:14px; font-weight:800; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
-  .viewer-host{font-size:11px; color:#c8d8e4; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
-  .viewer-external{
-    flex:0 0 auto; background:rgba(255,255,255,.14); border:1px solid rgba(255,255,255,.35);
-    color:#fff; border-radius:20px; padding:8px 12px; font-size:12px; font-weight:700;
-    cursor:pointer; text-decoration:none; display:flex; align-items:center; gap:5px;
-  }
-  .viewer-external:hover{background:rgba(255,255,255,.24);}
-  #appViewerFrame{flex:1 1 auto; width:100%; height:100%; border:none; background:#fff;}
-  .viewer-loading{
-    position:absolute; inset:0; top:52px; display:flex; flex-direction:column;
-    align-items:center; justify-content:center; gap:10px; color:var(--text-mute);
-    font-size:13px; font-weight:600; background:var(--bg);
-  }
-  .viewer-spinner{
-    width:30px; height:30px; border-radius:50%; border:3px solid #dde6ee;
-    border-top-color:var(--navy); animation:spin .8s linear infinite;
-  }
+  .launch.full .spin{opacity:1;}
+  .launch .lname{position:absolute; bottom:calc(var(--safe-b) + 24px); left:0; right:0; text-align:center; font-weight:700; font-size:14px; opacity:0; transition:opacity .3s ease .4s; color:#fff; text-shadow:0 1px 6px rgba(0,0,0,.3);}
+  .launch.full .lname{opacity:1;}
   @keyframes spin{to{transform:rotate(360deg);}}
+
+  /* ============ MODALS (bottom sheet on phone) ============ */
+  .backdrop{
+    position:fixed; inset:0; z-index:5000; display:flex; align-items:center; justify-content:center; padding:16px;
+    background:rgba(5,12,22,.5); -webkit-backdrop-filter:blur(8px); backdrop-filter:blur(8px); animation:fade .25s ease;
+  }
+  @keyframes fade{from{opacity:0;}to{opacity:1;}}
+  .sheet{
+    width:100%; max-width:420px; max-height:calc(100% - 20px); overflow:auto; padding:24px; color:#fff; border-radius:28px;
+    background:rgba(24,44,68,.82); border:1px solid var(--glass-b);
+    -webkit-backdrop-filter:blur(30px) saturate(180%); backdrop-filter:blur(30px) saturate(180%);
+    box-shadow:0 30px 80px rgba(0,0,0,.45); animation:sheetIn .45s var(--spring);
+  }
+  @keyframes sheetIn{from{opacity:0; transform:translateY(40px) scale(.94);}to{opacity:1; transform:none;}}
+  .sheet h3{margin:0 0 16px; font-size:19px; font-weight:800;}
+  .sheet .sub{margin:-8px 0 16px; font-size:12.5px; color:var(--mute); line-height:1.6;}
+  .field{margin-bottom:14px;}
+  .field label{display:block; font-size:11px; font-weight:700; color:var(--mute); text-transform:uppercase; letter-spacing:.5px; margin-bottom:6px;}
+  .field input{
+    width:100%; border:1px solid rgba(255,255,255,.2); border-radius:14px; padding:12px 14px; font-size:15px; font-family:inherit; outline:none;
+    color:#fff; background:rgba(255,255,255,.1); transition:border-color .2s, background .2s;
+  }
+  .field input::placeholder{color:rgba(255,255,255,.4);}
+  .field input:focus{border-color:#7fb8ff; background:rgba(255,255,255,.16);}
+  .emoji-row{display:flex; gap:7px; flex-wrap:wrap;}
+  .emoji-pick{width:38px; height:38px; border-radius:11px; border:1px solid rgba(255,255,255,.2); background:rgba(255,255,255,.08); font-size:18px; cursor:pointer; display:flex; align-items:center; justify-content:center; transition:transform .2s var(--spring);}
+  .emoji-pick:hover{transform:scale(1.12);}
+  .emoji-pick.active{border-color:#7fb8ff; background:rgba(127,184,255,.3); transform:scale(1.1);}
+  .actions{display:flex; gap:10px; justify-content:flex-end; margin-top:20px;}
+  .btn{border:none; border-radius:14px; padding:12px 20px; font-weight:700; font-size:14px; cursor:pointer; font-family:inherit; transition:transform .15s var(--spring), opacity .2s;}
+  .btn:active{transform:scale(.94);}
+  .btn.cancel{background:rgba(255,255,255,.14); color:#fff;}
+  .btn.save{background:linear-gradient(160deg,#4da3ff,#2b6fe0); color:#fff;}
+  .btn[disabled]{opacity:.6; cursor:default;}
+  .link-btn{background:none; border:none; color:#8ec5ff; font-size:12.5px; font-weight:700; cursor:pointer; padding:0; margin-bottom:8px; font-family:inherit;}
+  .guide{background:rgba(255,255,255,.08); border-radius:14px; padding:12px 14px; font-size:12.5px; line-height:1.75; margin-bottom:12px;}
+  .errbox{background:rgba(255,69,58,.18); border-left:3px solid #ff5a50; padding:10px 12px; border-radius:10px; font-size:12.5px; margin-bottom:12px; white-space:pre-wrap;}
+  @media(max-width:520px){
+    .backdrop{align-items:flex-end; padding:0;}
+    .sheet{border-radius:28px 28px 0 0; max-width:none; padding-bottom:calc(var(--safe-b) + 24px); animation-name:sheetUp;}
+    @keyframes sheetUp{from{transform:translateY(100%);}to{transform:none;}}
+  }
+
+  /* ============ TOASTS (iOS banner style, top) ============ */
+  #toastStack{position:fixed; top:calc(var(--safe-t) + 12px); left:50%; transform:translateX(-50%); z-index:9999; display:flex; flex-direction:column; gap:8px; width:100%; max-width:380px; padding:0 14px; pointer-events:none;}
+  .toast{
+    pointer-events:auto; display:flex; align-items:center; gap:12px; padding:12px 14px; border-radius:20px; color:#fff;
+    background:rgba(28,44,64,.82); border:1px solid var(--glass-b); box-shadow:0 12px 34px rgba(0,0,0,.35);
+    -webkit-backdrop-filter:blur(24px) saturate(180%); backdrop-filter:blur(24px) saturate(180%);
+    animation:toastIn .5s var(--spring) forwards;
+  }
+  .toast.leaving{animation:toastOut .3s ease forwards;}
+  .toast-icon{flex:0 0 auto; width:34px; height:34px; border-radius:10px; display:flex; align-items:center; justify-content:center; font-size:17px; background:#34c759; animation:pop .5s .05s var(--spring) both;}
+  .toast.update .toast-icon{background:#ff9f0a;} .toast.del .toast-icon{background:#ff453a;} .toast.err .toast-icon{background:#ff453a;}
+  .toast-body{min-width:0; display:flex; flex-direction:column; gap:1px;}
+  .toast-title{font-size:12px; font-weight:800; letter-spacing:.4px; text-transform:uppercase;}
+  .toast-msg{font-size:13px; color:var(--mute); font-weight:600; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+  @keyframes toastIn{from{opacity:0; transform:translateY(-30px) scale(.9);}to{opacity:1; transform:none;}}
+  @keyframes toastOut{to{opacity:0; transform:translateY(-20px) scale(.94);}}
+  @keyframes pop{0%{transform:scale(0) rotate(-30deg);}60%{transform:scale(1.2) rotate(6deg);}100%{transform:none;}}
+
+  @media (prefers-reduced-motion:reduce){
+    *,*::before,*::after{animation-duration:.01ms !important; animation-delay:0s !important; transition-duration:.01ms !important;}
+  }
 </style>
 </head>
 <body>
 
+<div class="wallpaper"><div class="blob b1"></div><div class="blob b2"></div><div class="blob b3"></div></div>
 <div id="toastStack"></div>
 
-<div class="wrap">
-  <div class="topbar">
-    <div>
-      <h1>🔗 App Repository</h1>
-      <p>EWD Azamgarh — Sabhi Web App / PWA ki links ek jagah</p>
-    </div>
-    <div class="top-right">
-      <button class="install-btn" id="installBtn">📲 Install App</button>
-      <button class="ghost-btn app-hidden" id="adminUnlockBtn">🔒 Admin</button>
-      <div class="admin-badge app-hidden" id="adminBadgeBox"><span class="dot"></span> Admin Mode<button class="ghost-btn" id="adminLockBtn" style="margin-left:8px;padding:3px 9px;font-size:10.5px;">Lock</button></div>
-    </div>
-  </div>
+<main class="screen">
+  <header class="hero">
+    <div class="clock" id="clock">--:--</div>
+    <div class="date" id="date"></div>
+    <div class="brand"><i></i> Workshop Apps · EWD Azamgarh</div>
+  </header>
 
-  <!-- MAIN APP — hamesha turant khula rehta hai, koi login gate nahi -->
-  <div id="app">
-    <div class="toolbar">
-      <div class="search-box">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
-        <input type="text" id="searchInput" placeholder="App search karein...">
-      </div>
-      <button class="add-btn app-hidden" id="addAppBtn">+ Naya App Add Karein</button>
-    </div>
+  <div class="grid" id="appGrid"></div>
 
-    <div class="skeleton-grid" id="skeletonGrid">
-      <div class="skeleton-tile"></div><div class="skeleton-tile"></div><div class="skeleton-tile"></div>
-    </div>
-    <div class="app-grid app-hidden" id="appGrid"></div>
-    <div class="empty-state app-hidden" id="emptyState">
-      <div class="big">📭</div>
-      <h3 id="emptyTitle">Abhi tak koi app add nahi hui</h3>
-      <p id="emptyMsg">Admin unlock kar ke pehli app add karein.</p>
-    </div>
+  <div class="empty app-hidden" id="emptyState">
+    <div class="big">📭</div>
+    <h3>No apps yet</h3>
+    <p id="emptyMsg">Unlock admin mode to add the first app.</p>
   </div>
-</div>
+</main>
 
-<!-- APP VIEWER — app isi page ke andar iframe mein khulti hai, Back se home par wapas -->
-<div id="appViewer" class="app-hidden">
-  <div class="viewer-bar">
-    <button class="viewer-back" id="viewerBackBtn">← Back</button>
-    <div class="viewer-title">
-      <span class="viewer-icon" id="viewerIcon">🔗</span>
-      <div style="min-width:0;">
-        <div class="viewer-name" id="viewerName"></div>
-        <div class="viewer-host" id="viewerHost"></div>
-      </div>
-    </div>
-    <a class="viewer-external" id="viewerExternalBtn" href="#" target="_blank" rel="noopener noreferrer" title="Naye tab mein kholein">↗ New Tab</a>
-  </div>
-  <div style="position:relative; flex:1 1 auto;">
-    <div class="viewer-loading" id="viewerLoading">
-      <div class="viewer-spinner"></div>
-      <div>App load ho rahi hai...</div>
-    </div>
-    <iframe id="appViewerFrame" title="App view" allow="clipboard-write; fullscreen; geolocation; camera; microphone"></iframe>
-  </div>
-</div>
+<!-- DOCK -->
+<nav class="dock" id="dock">
+  <button class="dock-btn" id="installBtn"><div class="dock-ico">📲</div><span class="t">Install</span></button>
+  <button class="dock-btn app-hidden" id="editBtn"><div class="dock-ico">✏️</div><span class="t" id="editBtnLabel">Edit</span></button>
+  <button class="dock-btn" id="adminBtn"><div class="dock-ico" id="adminIco">🔒</div><span class="t" id="adminLabel">Admin</span></button>
+</nav>
 
-<!-- ADD/EDIT MODAL -->
-<div class="modal-backdrop app-hidden" id="modalBackdrop">
-  <div class="modal">
-    <h3 id="modalTitle">Naya App Add Karein</h3>
-    <div class="field"><label>App Ka Naam</label><input type="text" id="fName" placeholder="e.g. Wire &amp; Strip Stock Dashboard"></div>
-    <div class="field"><label>Link (URL)</label><input type="text" id="fUrl" placeholder="https://..."></div>
-    <div class="field"><label>Chhota Description (optional)</label><input type="text" id="fDesc" placeholder="e.g. Daily stock aur balance tracker"></div>
-    <div class="field"><label>Icon Chunein</label><div class="emoji-row" id="emojiRow"></div></div>
-    <div class="modal-actions">
-      <button class="btn-cancel" id="modalCancelBtn" type="button">Cancel</button>
-      <button class="btn-save" id="modalSaveBtn" type="button">Save</button>
+<!-- ADD/EDIT SHEET -->
+<div class="backdrop app-hidden" id="modalBackdrop">
+  <div class="sheet">
+    <h3 id="modalTitle">Add New App</h3>
+    <div class="field"><label>App Name</label><input type="text" id="fName" placeholder="e.g. Stock Dashboard"></div>
+    <div class="field"><label>Link (URL)</label><input type="text" id="fUrl" placeholder="https://..." autocapitalize="off" autocomplete="off"></div>
+    <div class="field"><label>Short Description (optional)</label><input type="text" id="fDesc" placeholder="e.g. Daily stock tracker"></div>
+    <div class="field"><label>Choose Icon</label><div class="emoji-row" id="emojiRow"></div></div>
+    <div class="actions">
+      <button class="btn cancel" id="modalCancelBtn" type="button">Cancel</button>
+      <button class="btn save" id="modalSaveBtn" type="button">Save</button>
     </div>
   </div>
 </div>
 
-<!-- ADMIN UNLOCK MODAL -->
-<div class="modal-backdrop app-hidden" id="adminBackdrop">
-  <div class="modal">
+<!-- ADMIN SHEET -->
+<div class="backdrop app-hidden" id="adminBackdrop">
+  <div class="sheet">
     <h3>🔒 Admin Unlock</h3>
-    <div class="sub" id="adminSub">Sirf ek baar setup karna hai. Apps ki list is GitHub repo ki <code>apps.json</code> file mein save hoti hai — admin ko ek GitHub Personal Access Token chahiye taaki wo edit kar sake. Neeche "Setup guide" dabayein agar pehli baar kar rahe hain.</div>
-    <div class="field"><label>GitHub Username</label><input type="text" id="cfgOwner" placeholder="e.g. kmith313"></div>
-    <div class="field"><label>Repository Ka Naam</label><input type="text" id="cfgRepo" placeholder="e.g. kmith313.github.io"></div>
-    <div class="field"><label>Branch</label><input type="text" id="cfgBranch" placeholder="main" value="main"></div>
+    <div class="sub">One-time setup. The apps list is stored in this repository's <code>apps.json</code> file, so the admin needs a GitHub Personal Access Token to edit it. Tap "Setup guide" below if this is your first time.</div>
+    <div class="field"><label>GitHub Username</label><input type="text" id="cfgOwner" placeholder="e.g. kmith313" autocapitalize="off" autocomplete="off"></div>
+    <div class="field"><label>Repository Name</label><input type="text" id="cfgRepo" placeholder="e.g. WORKSHOP-APPS" autocapitalize="off" autocomplete="off"></div>
+    <div class="field"><label>Branch</label><input type="text" id="cfgBranch" placeholder="main" value="main" autocapitalize="off"></div>
     <div class="field"><label>Personal Access Token</label><input type="password" id="cfgToken" placeholder="ghp_..."></div>
-    <button class="link-btn" id="setupGuideBtn" type="button" style="margin-bottom:6px;">ℹ️ Token kaise banayein? (Setup guide)</button>
-    <div id="setupGuideBox" class="app-hidden" style="background:var(--steel-light);border-radius:9px;padding:12px;font-size:12px;line-height:1.7;margin-bottom:10px;color:var(--text);">
-      1. <b>github.com/settings/tokens?type=beta</b> par jayein aur "Generate new token" dabayein<br>
-      2. Naam kuch bhi rakhein, Expiration "No expiration" ya lambi rakhein<br>
-      3. "Repository access" mein sirf apna repo chunein (jahan ye app-repository host hai)<br>
-      4. "Permissions" → "Contents" → "Read and write" set karein<br>
-      5. Token generate karke copy karein aur yahan paste karein — ye sirf isi browser mein save hoga, kahin aur nahi jayega
+    <button class="link-btn" id="setupGuideBtn" type="button">ℹ️ How to create a token? (Setup guide)</button>
+    <div id="setupGuideBox" class="guide app-hidden">
+      1. Go to <b>github.com/settings/tokens?type=beta</b> and tap "Generate new token"<br>
+      2. Give it any name and choose a long expiration (or "No expiration")<br>
+      3. Under "Repository access", select only this repository<br>
+      4. Under "Permissions" → "Contents", choose "Read and write"<br>
+      5. Generate the token, copy it and paste it here. It is saved only in this browser.
     </div>
-    <div id="adminErrBox" class="app-hidden" style="background:var(--red-light);border-left:3px solid var(--red);padding:10px 12px;border-radius:8px;font-size:12px;color:#8f371f;margin-bottom:10px;"></div>
-    <div class="modal-actions">
-      <button class="btn-cancel" id="adminCancelBtn" type="button">Cancel</button>
-      <button class="btn-save" id="adminSaveBtn" type="button">Unlock</button>
+    <div id="adminErrBox" class="errbox app-hidden"></div>
+    <div class="actions">
+      <button class="btn cancel" id="adminCancelBtn" type="button">Cancel</button>
+      <button class="btn save" id="adminSaveBtn" type="button">Unlock</button>
     </div>
   </div>
 </div>
@@ -323,21 +295,49 @@
 function $(id){ return document.getElementById(id); }
 
 /* ===================== CONFIG ===================== */
-// Public data file — anyone opening the app can read this instantly, no login.
 const DATA_FILE = 'apps.json';
-// How the app talks to GitHub to WRITE changes (admin only). Owner/repo/branch
-// are entered once by the admin via the unlock modal and remembered on that device.
+const CACHE_KEY = 'ws_apps_cache_v1';
 const GITHUB_API = 'https://api.github.com';
 const EMOJI_CHOICES = ["🔗","📊","📦","🛠️","⚡","🧾","📋","🗂️","💧","🔋","📈","🧮","🖥️","📱","🛢️"];
-const TILE_COLORS = ["#16324a","#1f4a6b","#2f8f5b","#c9822c","#c0392b","#5b7a94","#7d5ba6","#0e7c86"];
+const GRADIENTS = [
+  ['#ff9a5a','#f2505d'], ['#5ec8ff','#2b6fe0'], ['#5eeaa6','#0fa36b'], ['#ffd45e','#f29a1b'],
+  ['#c493ff','#7a4fe0'], ['#ff7eb3','#d6336c'], ['#6be3e3','#0e8a99'], ['#9aa8ff','#4a56d6']
+];
 
 /* ===================== STATE ===================== */
 let apps = [];
-let lastAppsSignature = '';
+let lastSig = '';
 let editingId = null;
-let adminCfg = null;      // {owner, repo, branch, token}
-let currentSha = null;    // sha of apps.json on GitHub, needed to write
+let adminCfg = null;
+let editMode = false;
 let pollTimer = null;
+let selectedEmoji = EMOJI_CHOICES[0];
+let suppressClick = false;
+
+/* ===================== HELPERS ===================== */
+function escapeHtml(s){ return String(s).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+function hashOf(str){ let h=0; for (let i=0;i<str.length;i++) h=(h*31+str.charCodeAt(i))>>>0; return h; }
+function gradFor(a){ const g = GRADIENTS[hashOf(a.name||a.id||'x') % GRADIENTS.length]; return g; }
+function niceName(s){
+  // "SITE INSPECTION REPORT" -> "Site Inspection Report" (display only; data is untouched)
+  return String(s||'').toLowerCase()
+    .replace(/(^|[\s\-(\/])([a-z])/g, (m,p,c)=> p + c.toUpperCase())
+    .replace(/\s(Of|And|The|In|For|To|On)(?=\s)/g, m=> m.toLowerCase());
+}
+function toB64(str){
+  const bytes = new TextEncoder().encode(str); let bin = '';
+  bytes.forEach(b => bin += String.fromCharCode(b)); return btoa(bin);
+}
+
+/* ===================== CLOCK ===================== */
+function tick(){
+  const d = new Date();
+  let h = d.getHours(); const m = String(d.getMinutes()).padStart(2,'0');
+  const ap = h >= 12 ? 'PM' : 'AM'; h = h % 12 || 12;
+  $('clock').innerHTML = `${h}:${m}<small>${ap}</small>`;
+  $('date').textContent = d.toLocaleDateString('en-IN', { weekday:'long', day:'numeric', month:'long' });
+}
+tick(); setInterval(tick, 15000);
 
 /* ===================== TOASTS ===================== */
 const TOAST_CONFIG = {
@@ -346,114 +346,200 @@ const TOAST_CONFIG = {
 };
 function showToast(type, msg){
   const cfg = TOAST_CONFIG[type] || TOAST_CONFIG.add;
-  const stack = $('toastStack'); if (!stack) return;
   const el = document.createElement('div');
-  el.className = `toast ${cfg.cls}`;
-  el.innerHTML = `<div class="toast-icon">${cfg.icon}</div><div class="toast-body"><div class="toast-title">${cfg.title}</div><div class="toast-msg">${msg}</div></div>`;
-  stack.appendChild(el);
-  const remove = () => { if (!el.isConnected) return; el.classList.add('leaving'); setTimeout(()=> el.remove(), 320); };
-  const timer = setTimeout(remove, 2800);
-  el.addEventListener('click', ()=>{ clearTimeout(timer); remove(); });
+  el.className = 'toast ' + cfg.cls;
+  el.innerHTML = `<div class="toast-icon">${cfg.icon}</div><div class="toast-body"><div class="toast-title">${cfg.title}</div><div class="toast-msg">${escapeHtml(msg)}</div></div>`;
+  $('toastStack').appendChild(el);
+  const remove = () => { if (!el.isConnected) return; el.classList.add('leaving'); setTimeout(()=> el.remove(), 300); };
+  const t = setTimeout(remove, 2800);
+  el.addEventListener('click', ()=>{ clearTimeout(t); remove(); });
 }
 
-/* ===================== LOAD (public, no auth) ===================== */
+/* ===================== LOAD (instant from cache, then refresh) ===================== */
+function readCache(){
+  try{ const j = JSON.parse(localStorage.getItem(CACHE_KEY) || 'null'); return Array.isArray(j) ? j : null; }catch(e){ return null; }
+}
+function writeCache(){ try{ localStorage.setItem(CACHE_KEY, JSON.stringify(apps)); }catch(e){} }
+
+function warmConnections(){
+  // Open network connections to every app's server ahead of time so the first tap is faster.
+  const seen = new Set(['https://script.google.com','https://script.googleusercontent.com','https://www.gstatic.com','https://fonts.gstatic.com']);
+  apps.forEach(a=>{ try{ seen.add(new URL(a.url).origin); }catch(e){} });
+  seen.forEach(origin=>{
+    if (document.head.querySelector(`link[data-warm="${origin}"]`)) return;
+    const l = document.createElement('link'); l.rel = 'preconnect'; l.href = origin; l.dataset.warm = origin;
+    if (origin.includes('gstatic') || origin.includes('googleusercontent')) l.crossOrigin = '';
+    document.head.appendChild(l);
+  });
+}
+
 async function loadApps(silent){
   try{
     const r = await fetch('./' + DATA_FILE + '?t=' + Date.now(), { cache:'no-store' });
-    if (!r.ok){ apps = []; }
-    else {
+    if (r.ok){
       const json = await r.json();
       apps = Array.isArray(json.apps) ? json.apps : [];
     }
   }catch(e){
-    if (!silent) showToast('err', 'Apps list load nahi ho payi. Internet check karein.');
+    if (!silent && !apps.length) showToast('err', 'Could not load apps. Check your internet.');
     return;
   }
   const sig = JSON.stringify(apps);
-  if (sig === lastAppsSignature) return; // nothing changed — skip re-render to avoid flicker
-  lastAppsSignature = sig;
-  renderApps(true);
+  if (sig === lastSig) return;
+  lastSig = sig;
+  writeCache();
+  warmConnections();
+  renderApps(!silent && !lastSig ? true : false);
 }
 
 function startPolling(){
   if (pollTimer) clearInterval(pollTimer);
-  pollTimer = setInterval(()=> loadApps(true), 15000);
+  pollTimer = setInterval(()=>{ if (!document.hidden && !editMode) loadApps(true); }, 30000);
 }
+document.addEventListener('visibilitychange', ()=>{ if (!document.hidden) loadApps(true); });
 
 /* ===================== RENDER ===================== */
-function hostOf(url){ try{ return new URL(url).hostname.replace('www.',''); }catch(e){ return url; } }
-function colorFor(str){ let h=0; for (let i=0;i<str.length;i++) h=(h*31+str.charCodeAt(i))>>>0; return TILE_COLORS[h % TILE_COLORS.length]; }
-function escapeHtml(s){ return String(s).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
-
-function renderApps(isDataUpdate){
-  $('skeletonGrid').classList.add('app-hidden');
-  const term = ($('searchInput').value || '').trim().toLowerCase();
-  const filtered = apps.filter(a => !term || (a.name||'').toLowerCase().includes(term) || (a.desc||'').toLowerCase().includes(term));
+let firstRender = true;
+function renderApps(){
   const grid = $('appGrid');
-  grid.classList.remove('app-hidden');
-  $('emptyState').classList.toggle('app-hidden', filtered.length>0);
+  const list = apps.slice().sort((a,b)=> (a.name||'').localeCompare(b.name||''));
+  $('emptyState').classList.toggle('app-hidden', list.length > 0 || !!adminCfg);
+  $('emptyMsg').textContent = 'Unlock admin mode to add the first app.';
   grid.innerHTML = '';
-  if (!filtered.length){
-    $('emptyTitle').textContent = apps.length ? 'Koi app match nahi hui' : 'Abhi tak koi app add nahi hui';
-    $('emptyMsg').textContent = apps.length
-      ? 'Search se koi app match nahi hui.'
-      : (adminCfg ? '"+ Naya App Add Karein" button se pehli app add karein.' : 'Admin ke app add karne ka intezaar karein.');
-    return;
-  }
-  filtered.slice().sort((a,b)=> (a.name||'').localeCompare(b.name||'')).forEach(a=>{
-    const tile = document.createElement('div');
-    tile.className = 'app-tile' + (isDataUpdate ? ' tile-enter' : '');
-    tile.style.cursor = 'pointer';
-    tile.dataset.id = a.id;
-    tile.title = 'Kholein';
-    const color = colorFor(a.name||a.id||'x');
-    tile.innerHTML = `
-      <div class="tile-top">
-        <div class="tile-icon" style="background:${color}">${a.icon || '🔗'}</div>
-        ${adminCfg ? `<div class="tile-admin-actions">
-          <button class="icon-btn edit-btn" data-id="${a.id}" title="Edit">✏️</button>
-          <button class="icon-btn del del-btn" data-id="${a.id}" title="Delete">🗑</button>
-        </div>` : ''}
-      </div>
-      <p class="tile-name">${escapeHtml(a.name||'')}</p>
-      <p class="tile-desc">${escapeHtml(a.desc||'')}</p>
-    `;
-    grid.appendChild(tile);
-  });
-  grid.querySelectorAll('.app-tile').forEach(t=> t.addEventListener('click', (e)=>{
-    if (e.target.closest('.tile-admin-actions')) return;
-    openAppView(t.dataset.id);
-  }));
-  if (adminCfg){
-    grid.querySelectorAll('.edit-btn').forEach(b=> b.addEventListener('click', (e)=>{ e.stopPropagation(); openModal(b.dataset.id); }));
-    grid.querySelectorAll('.del-btn').forEach(b=> b.addEventListener('click', (e)=>{ e.stopPropagation(); deleteApp(b.dataset.id); }));
-  }
-}
-$('searchInput').addEventListener('input', ()=> renderApps(false));
 
-/* ===================== ADMIN UNLOCK (no Google login — just a saved GitHub token) ===================== */
+  const frag = document.createDocumentFragment();
+  list.forEach((a, i)=>{
+    const [c1, c2] = gradFor(a);
+    const el = document.createElement('a');
+    el.className = 'tile';
+    el.href = a.url; el.dataset.id = a.id; el.draggable = false;
+    el.style.setProperty('--i', firstRender ? i : 0);
+    if (!firstRender) el.style.animationDelay = '0s';
+    el.setAttribute('aria-label', niceName(a.name));
+    el.innerHTML = `
+      <button class="badge" type="button" aria-label="Delete" data-del="${escapeHtml(a.id)}">−</button>
+      <div class="icon" style="background:linear-gradient(160deg,${c1},${c2})"><span>${a.icon || '🔗'}</span></div>
+      <div class="label">${escapeHtml(niceName(a.name))}</div>`;
+    frag.appendChild(el);
+  });
+
+  if (adminCfg){
+    const add = document.createElement('a');
+    add.className = 'tile add'; add.href = '#'; add.style.setProperty('--i', list.length);
+    if (!firstRender) add.style.animationDelay = '0s';
+    add.innerHTML = `<div class="icon"><span>+</span></div><div class="label">Add App</div>`;
+    add.addEventListener('click', e=>{ e.preventDefault(); openModal(null); });
+    frag.appendChild(add);
+  }
+  grid.appendChild(frag);
+  if (list.length) firstRender = false;
+}
+
+/* ===================== TAP / LONG-PRESS HANDLING (event delegation) ===================== */
+const gridEl = $('appGrid');
+let pressTimer = null, pressTile = null;
+
+gridEl.addEventListener('pointerdown', e=>{
+  const tile = e.target.closest('.tile:not(.add)');
+  if (!tile || !adminCfg || editMode) return;
+  pressTile = tile;
+  pressTimer = setTimeout(()=>{ suppressClick = true; setEditMode(true); if (navigator.vibrate) navigator.vibrate(15); }, 550);
+});
+['pointerup','pointercancel','pointerleave','pointermove'].forEach(ev=>{
+  gridEl.addEventListener(ev, e=>{ if (ev==='pointermove' && Math.abs(e.movementX)+Math.abs(e.movementY) < 3) return; clearTimeout(pressTimer); });
+});
+gridEl.addEventListener('contextmenu', e=>{ if (adminCfg && e.target.closest('.tile')) e.preventDefault(); });
+
+gridEl.addEventListener('click', e=>{
+  const delBtn = e.target.closest('[data-del]');
+  if (delBtn){ e.preventDefault(); e.stopPropagation(); deleteApp(delBtn.dataset.del); return; }
+  const tile = e.target.closest('.tile:not(.add)');
+  if (!tile) return;
+  if (suppressClick){ e.preventDefault(); suppressClick = false; return; }
+  if (editMode){ e.preventDefault(); openModal(tile.dataset.id); return; }
+  // Let Ctrl/Cmd/Shift/middle clicks behave like normal links (open in new tab).
+  if (e.metaKey || e.ctrlKey || e.shiftKey || e.button !== 0) return;
+  e.preventDefault();
+  launchApp(tile);
+});
+
+/* ===================== LAUNCH (iOS-style zoom, then direct navigation) ===================== */
+let launching = false;
+function launchApp(tile){
+  if (launching) return;
+  const a = apps.find(x => x.id === tile.dataset.id);
+  if (!a || !a.url) return;
+  launching = true;
+
+  const icon = tile.querySelector('.icon');
+  const r = icon.getBoundingClientRect();
+  const [c1, c2] = gradFor(a);
+
+  const o = document.createElement('div');
+  o.className = 'launch';
+  o.style.cssText = `left:${r.left}px; top:${r.top}px; width:${r.width}px; height:${r.height}px; border-radius:${r.width*0.224}px; background:linear-gradient(160deg,${c1},${c2});`;
+  o.innerHTML = `<span class="em">${a.icon || '🔗'}</span><div class="spin"></div><div class="lname">${escapeHtml(niceName(a.name))}</div>`;
+  document.body.appendChild(o);
+  document.body.classList.add('launching');
+  o.getBoundingClientRect(); // force layout so the transition starts from the icon rect
+
+  requestAnimationFrame(()=>{
+    o.classList.add('full');
+    o.style.left = '0px'; o.style.top = '0px';
+    o.style.width = '100vw'; o.style.height = '100dvh'; o.style.borderRadius = '0px';
+  });
+
+  // Navigate straight away in the top-level window (same speed as opening in Chrome).
+  // The zoom animation keeps playing while the next page loads.
+  setTimeout(()=>{ window.location.href = a.url; }, 60);
+}
+
+// Coming back via the Back button (or bfcache restore): reset the launch state.
+window.addEventListener('pageshow', ()=>{
+  launching = false;
+  document.body.classList.remove('launching');
+  document.querySelectorAll('.launch').forEach(n => n.remove());
+});
+
+/* ===================== EDIT MODE ===================== */
+function setEditMode(on){
+  editMode = !!on && !!adminCfg;
+  document.body.classList.toggle('editing', editMode);
+  $('editBtn').classList.toggle('on', editMode);
+  $('editBtnLabel').textContent = editMode ? 'Done' : 'Edit';
+  $('editBtn').querySelector('.dock-ico').textContent = editMode ? '✅' : '✏️';
+}
+$('editBtn').addEventListener('click', ()=> setEditMode(!editMode));
+document.addEventListener('keydown', e=>{ if (e.key === 'Escape'){ if (editMode) setEditMode(false); closeModal(); $('adminBackdrop').classList.add('app-hidden'); } });
+
+/* ===================== ADMIN ===================== */
 function loadAdminCfg(){
-  try{
-    const raw = localStorage.getItem('ar_admin_cfg');
-    if (!raw) return null;
-    return JSON.parse(raw);
-  }catch(e){ return null; }
+  try{ const raw = localStorage.getItem('ar_admin_cfg'); return raw ? JSON.parse(raw) : null; }catch(e){ return null; }
 }
 function applyAdminUI(){
-  $('adminUnlockBtn').classList.toggle('app-hidden', !!adminCfg);
-  $('adminBadgeBox').classList.toggle('app-hidden', !adminCfg);
-  $('addAppBtn').classList.toggle('app-hidden', !adminCfg);
-  renderApps(false);
+  $('editBtn').classList.toggle('app-hidden', !adminCfg);
+  $('adminIco').textContent = adminCfg ? '🔓' : '🔒';
+  $('adminLabel').textContent = adminCfg ? 'Lock' : 'Admin';
+  $('adminBtn').classList.toggle('on', !!adminCfg);
+  if (!adminCfg) setEditMode(false);
+  renderApps();
 }
 adminCfg = loadAdminCfg();
 
-$('adminUnlockBtn').addEventListener('click', ()=>{
+function showAdminErr(msg){ const b = $('adminErrBox'); b.textContent = msg; b.classList.remove('app-hidden'); }
+
+$('adminBtn').addEventListener('click', ()=>{
+  if (adminCfg){
+    adminCfg = null; localStorage.removeItem('ar_admin_cfg');
+    applyAdminUI(); showToast('update', 'Admin mode locked');
+    return;
+  }
   $('adminErrBox').classList.add('app-hidden');
-  $('cfgOwner').value = ''; $('cfgRepo').value = ''; $('cfgBranch').value='main'; $('cfgToken').value='';
+  $('cfgOwner').value = ''; $('cfgRepo').value = ''; $('cfgBranch').value = 'main'; $('cfgToken').value = '';
   $('adminBackdrop').classList.remove('app-hidden');
 });
 $('adminCancelBtn').addEventListener('click', ()=> $('adminBackdrop').classList.add('app-hidden'));
-$('adminBackdrop').addEventListener('click', (e)=>{ if (e.target.id==='adminBackdrop') $('adminBackdrop').classList.add('app-hidden'); });
+$('adminBackdrop').addEventListener('click', e=>{ if (e.target.id === 'adminBackdrop') $('adminBackdrop').classList.add('app-hidden'); });
 $('setupGuideBtn').addEventListener('click', ()=> $('setupGuideBox').classList.toggle('app-hidden'));
 
 $('adminSaveBtn').addEventListener('click', async ()=>{
@@ -461,91 +547,66 @@ $('adminSaveBtn').addEventListener('click', async ()=>{
   const repo = $('cfgRepo').value.trim();
   const branch = $('cfgBranch').value.trim() || 'main';
   const token = $('cfgToken').value.trim();
-  if (!owner || !repo || !token){ showAdminErr('Username, repo aur token teeno zaroori hain.'); return; }
+  if (!owner || !repo || !token){ showAdminErr('Username, repository and token are all required.'); return; }
   $('adminSaveBtn').disabled = true; $('adminSaveBtn').textContent = 'Checking...';
   try{
     const r = await fetch(`${GITHUB_API}/repos/${owner}/${repo}/contents/${DATA_FILE}?ref=${branch}`, {
-      headers: { Authorization: `token ${token}`, Accept:'application/vnd.github+json' }
+      headers:{ Authorization:`token ${token}`, Accept:'application/vnd.github+json' }
     });
-    if (r.status === 404){
-      // File doesn't exist yet — fine, we'll create it on first save.
-      currentSha = null;
-    } else if (!r.ok){
+    if (!r.ok && r.status !== 404){
       const t = await r.text().catch(()=> '');
-      throw new Error('GitHub se connect nahi ho paya (' + r.status + '). Token/repo/owner check karein.\n' + t.slice(0,150));
-    } else {
-      const data = await r.json();
-      currentSha = data.sha;
+      throw new Error('Could not connect to GitHub (' + r.status + '). Check the token, repository and username.\n' + t.slice(0,150));
     }
     adminCfg = { owner, repo, branch, token };
     localStorage.setItem('ar_admin_cfg', JSON.stringify(adminCfg));
     $('adminBackdrop').classList.add('app-hidden');
     applyAdminUI();
-    showToast('add', 'Admin mode unlock ho gaya');
+    showToast('add', 'Admin mode unlocked');
   }catch(e){
-    showAdminErr(e.message || 'Kuch galat ho gaya.');
+    showAdminErr(e.message || 'Something went wrong.');
   }finally{
     $('adminSaveBtn').disabled = false; $('adminSaveBtn').textContent = 'Unlock';
   }
-});
-function showAdminErr(msg){ const b=$('adminErrBox'); b.textContent=msg; b.classList.remove('app-hidden'); }
-
-$('adminLockBtn').addEventListener('click', ()=>{
-  adminCfg = null; currentSha = null;
-  localStorage.removeItem('ar_admin_cfg');
-  applyAdminUI();
-  showToast('update', 'Admin mode lock ho gaya');
 });
 
 /* ===================== SAVE TO GITHUB (admin only) ===================== */
 async function saveAppsToGithub(message){
   if (!adminCfg) return false;
   const { owner, repo, branch, token } = adminCfg;
-  const content = btoa(unescape(encodeURIComponent(JSON.stringify({ apps }, null, 2))));
+  const content = toB64(JSON.stringify({ apps }, null, 2));
+  const headers = { Authorization:`token ${token}`, Accept:'application/vnd.github+json' };
   try{
-    // Always fetch the latest sha right before saving — currentSha can go stale
-    // after a page refresh (or if another admin session changed the file),
-    // and GitHub rejects the write without the correct current sha.
+    // Always fetch the latest sha right before writing; a stale sha makes GitHub reject the save.
     let sha = null;
-    const getR = await fetch(`${GITHUB_API}/repos/${owner}/${repo}/contents/${DATA_FILE}?ref=${branch}`, {
-      headers:{ Authorization:`token ${token}`, Accept:'application/vnd.github+json' }
-    });
-    if (getR.status === 200){
-      const getData = await getR.json();
-      sha = getData.sha;
-    } else if (getR.status !== 404){
+    const getR = await fetch(`${GITHUB_API}/repos/${owner}/${repo}/contents/${DATA_FILE}?ref=${branch}`, { headers });
+    if (getR.status === 200){ sha = (await getR.json()).sha; }
+    else if (getR.status !== 404){
       const t = await getR.text().catch(()=> '');
-      throw new Error('GitHub se latest version fetch nahi ho payi (' + getR.status + '). ' + t.slice(0,150));
+      throw new Error('Could not fetch the latest version from GitHub (' + getR.status + '). ' + t.slice(0,150));
     }
-
     const body = { message, content, branch };
     if (sha) body.sha = sha;
     const r = await fetch(`${GITHUB_API}/repos/${owner}/${repo}/contents/${DATA_FILE}`, {
-      method:'PUT',
-      headers:{ Authorization:`token ${token}`, Accept:'application/vnd.github+json', 'Content-Type':'application/json' },
-      body: JSON.stringify(body)
+      method:'PUT', headers:{ ...headers, 'Content-Type':'application/json' }, body: JSON.stringify(body)
     });
     if (!r.ok){
       const t = await r.text().catch(()=> '');
-      throw new Error('GitHub par save nahi hua (' + r.status + '). ' + t.slice(0,150));
+      throw new Error('Save to GitHub failed (' + r.status + '). ' + t.slice(0,150));
     }
-    const data = await r.json();
-    currentSha = data.content ? data.content.sha : sha;
-    lastAppsSignature = JSON.stringify(apps);
+    lastSig = JSON.stringify(apps); writeCache();
     return true;
   }catch(e){
-    showToast('err', e.message || 'Save fail ho gaya.');
+    showToast('err', e.message || 'Save failed.');
     return false;
   }
 }
 
-/* ===================== ADD / EDIT MODAL ===================== */
-let selectedEmoji = EMOJI_CHOICES[0];
+/* ===================== ADD / EDIT SHEET ===================== */
 function buildEmojiRow(){
   const row = $('emojiRow'); row.innerHTML = '';
   EMOJI_CHOICES.forEach(em=>{
     const b = document.createElement('button');
-    b.type='button'; b.className='emoji-pick' + (em===selectedEmoji?' active':'');
+    b.type = 'button'; b.className = 'emoji-pick' + (em === selectedEmoji ? ' active' : '');
     b.textContent = em;
     b.addEventListener('click', ()=>{ selectedEmoji = em; row.querySelectorAll('.emoji-pick').forEach(x=>x.classList.remove('active')); b.classList.add('active'); });
     row.appendChild(b);
@@ -553,95 +614,60 @@ function buildEmojiRow(){
 }
 function openModal(id){
   editingId = id || null;
-  const existing = editingId ? apps.find(a=>a.id===editingId) : null;
-  $('modalTitle').textContent = existing ? 'App Edit Karein' : 'Naya App Add Karein';
-  $('fName').value = existing ? existing.name : '';
-  $('fUrl').value = existing ? existing.url : '';
-  $('fDesc').value = existing ? (existing.desc||'') : '';
-  selectedEmoji = existing ? (existing.icon || EMOJI_CHOICES[0]) : EMOJI_CHOICES[0];
+  const ex = editingId ? apps.find(a=>a.id === editingId) : null;
+  $('modalTitle').textContent = ex ? 'Edit App' : 'Add New App';
+  $('fName').value = ex ? ex.name : '';
+  $('fUrl').value = ex ? ex.url : '';
+  $('fDesc').value = ex ? (ex.desc || '') : '';
+  selectedEmoji = ex ? (ex.icon || EMOJI_CHOICES[0]) : EMOJI_CHOICES[0];
   buildEmojiRow();
   $('modalBackdrop').classList.remove('app-hidden');
-  setTimeout(()=> $('fName').focus(), 50);
+  setTimeout(()=> $('fName').focus(), 80);
 }
 function closeModal(){ $('modalBackdrop').classList.add('app-hidden'); editingId = null; }
-$('addAppBtn').addEventListener('click', ()=> openModal(null));
 $('modalCancelBtn').addEventListener('click', closeModal);
-$('modalBackdrop').addEventListener('click', (e)=>{ if (e.target.id==='modalBackdrop') closeModal(); });
+$('modalBackdrop').addEventListener('click', e=>{ if (e.target.id === 'modalBackdrop') closeModal(); });
 
 $('modalSaveBtn').addEventListener('click', async ()=>{
   const name = $('fName').value.trim();
   let url = $('fUrl').value.trim();
   const desc = $('fDesc').value.trim();
-  if (!name || !url){ alert('App ka naam aur link (URL) zaroori hai.'); return; }
+  if (!name || !url){ showToast('err', 'App name and link (URL) are required.'); return; }
   if (!/^https?:\/\//i.test(url)) url = 'https://' + url;
 
   $('modalSaveBtn').disabled = true; $('modalSaveBtn').textContent = 'Saving...';
   const wasEditing = !!editingId;
+  const backup = JSON.parse(JSON.stringify(apps));
   if (editingId){
-    const e = apps.find(a=>a.id===editingId);
-    if (e){ e.name=name; e.url=url; e.desc=desc; e.icon=selectedEmoji; }
+    const e = apps.find(a=>a.id === editingId);
+    if (e){ e.name = name; e.url = url; e.desc = desc; e.icon = selectedEmoji; }
   } else {
-    apps.push({ id: Date.now().toString(36)+Math.random().toString(36).slice(2,6), name, url, desc, icon: selectedEmoji, addedAt: new Date().toISOString() });
+    apps.push({ id: Date.now().toString(36) + Math.random().toString(36).slice(2,6), name, url, desc, icon: selectedEmoji, addedAt: new Date().toISOString() });
   }
   const ok = await saveAppsToGithub(wasEditing ? `Update app: ${name}` : `Add app: ${name}`);
   $('modalSaveBtn').disabled = false; $('modalSaveBtn').textContent = 'Save';
-  if (ok){
-    closeModal();
-    renderApps(true);
-    showToast(wasEditing ? 'update' : 'add', name);
-  }
+  if (ok){ closeModal(); warmConnections(); renderApps(); showToast(wasEditing ? 'update' : 'add', name); }
+  else { apps = backup; }
 });
 
 async function deleteApp(id){
-  const e = apps.find(a=>a.id===id);
+  const e = apps.find(a=>a.id === id);
   if (!e) return;
-  if (!confirm(`"${e.name}" delete karein?`)) return;
+  if (!confirm(`Delete "${e.name}"?`)) return;
   const backup = apps.slice();
-  apps = apps.filter(a=>a.id!==id);
+  apps = apps.filter(a=>a.id !== id);
   const ok = await saveAppsToGithub(`Delete app: ${e.name}`);
-  if (ok){ renderApps(true); showToast('del', e.name); }
+  if (ok){ renderApps(); showToast('del', e.name); }
   else { apps = backup; }
 }
 
-/* ===================== APP VIEWER (in-page iframe + Back) ===================== */
-function openAppView(id){
-  const a = apps.find(x=>x.id===id);
-  if (!a || !a.url) return;
-  $('viewerIcon').textContent = a.icon || '🔗';
-  $('viewerName').textContent = a.name || '';
-  $('viewerHost').textContent = hostOf(a.url);
-  $('viewerExternalBtn').href = a.url;
-  $('viewerLoading').classList.remove('app-hidden');
-  const frame = $('appViewerFrame');
-  frame.src = a.url;
-  frame.onload = ()=> $('viewerLoading').classList.add('app-hidden');
-  $('appViewer').classList.remove('app-hidden');
-  document.body.style.overflow = 'hidden';
-  // Home par wapas aane ke liye ek history entry push karte hain, taaki
-  // phone/browser ka hardware Back button bhi viewer ko band kar de.
-  if (!history.state || history.state.appViewer !== true){
-    history.pushState({ appViewer:true }, '');
-  }
-}
-function closeAppView(fromPopstate){
-  $('appViewer').classList.add('app-hidden');
-  const frame = $('appViewerFrame');
-  frame.src = 'about:blank';
-  document.body.style.overflow = '';
-  if (!fromPopstate && history.state && history.state.appViewer === true){
-    history.back();
-  }
-}
-$('viewerBackBtn').addEventListener('click', ()=> closeAppView(false));
-window.addEventListener('popstate', ()=>{
-  if (!$('appViewer').classList.contains('app-hidden')) closeAppView(true);
-});
-
-/* ===================== INSTALL PROMPT ===================== */
+/* ===================== INSTALL ===================== */
 let deferredPrompt;
-window.addEventListener('beforeinstallprompt', (e)=>{ e.preventDefault(); deferredPrompt = e; });
+window.addEventListener('beforeinstallprompt', e=>{ e.preventDefault(); deferredPrompt = e; });
+window.addEventListener('appinstalled', ()=> $('installBtn').classList.add('app-hidden'));
+if (window.matchMedia('(display-mode: standalone)').matches || navigator.standalone) $('installBtn').classList.add('app-hidden');
 $('installBtn').addEventListener('click', async ()=>{
-  if (!deferredPrompt){ alert('Browser ke "Add to Home Screen" option se install karein.'); return; }
+  if (!deferredPrompt){ showToast('update', 'Use "Add to Home Screen" in your browser menu.'); return; }
   deferredPrompt.prompt(); await deferredPrompt.userChoice; deferredPrompt = null;
 });
 if ('serviceWorker' in navigator){
@@ -649,10 +675,10 @@ if ('serviceWorker' in navigator){
 }
 
 /* ===================== INIT ===================== */
+const cached = readCache();
+if (cached && cached.length){ apps = cached; lastSig = JSON.stringify(apps); warmConnections(); }  // instant first paint
 applyAdminUI();
-loadApps(false).then(()=>{
-  if (!apps.length){ $('skeletonGrid').classList.add('app-hidden'); $('appGrid').classList.remove('app-hidden'); renderApps(false); }
-});
+loadApps(false);
 startPolling();
 </script>
 </body>

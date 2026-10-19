@@ -85,7 +85,14 @@
     content:''; position:absolute; inset:0; border-radius:inherit; pointer-events:none;
     background:linear-gradient(180deg,rgba(255,255,255,.34),rgba(255,255,255,0) 52%);
   }
-  .icon span{filter:drop-shadow(0 2px 3px rgba(0,0,0,.25)); position:relative; z-index:1; line-height:1;}
+  .icon span{filter:drop-shadow(0 2px 3px rgba(0,0,0,.25)); position:relative; z-index:1; line-height:1; transition:opacity .25s ease;}
+  /* The app's own icon: sits on top of the emoji and fades in once it has loaded. If it fails, the emoji stays. */
+  .icon img{position:absolute; inset:0; width:100%; height:100%; object-fit:cover; border-radius:inherit; z-index:2; opacity:0; transition:opacity .3s ease; pointer-events:none;}
+  .icon.img-ok img{opacity:1;}
+  .icon.img-ok span{opacity:0;}
+  .icon.img-ok.img-small{background:#fff !important;}
+  .icon.img-ok.img-small img{inset:17%; width:66%; height:66%; object-fit:contain; border-radius:0;}
+  .icon::after{z-index:3;}
   .tile:hover .icon{transform:translateY(-4px) scale(1.06); box-shadow:0 16px 28px rgba(0,0,0,.34), inset 0 1px 0 rgba(255,255,255,.45);}
   .tile:active .icon{transform:scale(.88); transition-duration:.12s;}
   .tile:focus-visible .icon{box-shadow:0 0 0 3px #fff, 0 8px 18px rgba(0,0,0,.3);}
@@ -147,6 +154,7 @@
     transition:left .5s var(--ease), top .5s var(--ease), width .5s var(--ease), height .5s var(--ease), border-radius .5s var(--ease);
     overflow:hidden;
   }
+  .launch .em img{width:84px; height:84px; object-fit:contain; border-radius:18px;}
   .launch .em{font-size:44px; transition:transform .5s var(--ease), opacity .35s ease .15s; filter:drop-shadow(0 3px 6px rgba(0,0,0,.3));}
   .launch.full .em{transform:scale(2.2); opacity:.95;}
   .launch .spin{
@@ -251,6 +259,7 @@
 <nav class="dock" id="dock">
   <button class="dock-btn" id="installBtn"><div class="dock-ico">📲</div><span class="t">Install</span></button>
   <button class="dock-btn app-hidden" id="editBtn"><div class="dock-ico">✏️</div><span class="t" id="editBtnLabel">Edit</span></button>
+  <button class="dock-btn app-hidden" id="autoIconBtn"><div class="dock-ico">🪄</div><span class="t">Auto Icons</span></button>
   <button class="dock-btn" id="adminBtn"><div class="dock-ico" id="adminIco">🔒</div><span class="t" id="adminLabel">Admin</span></button>
 </nav>
 
@@ -261,7 +270,8 @@
     <div class="field"><label>App Name</label><input type="text" id="fName" placeholder="e.g. Stock Dashboard"></div>
     <div class="field"><label>Link (URL)</label><input type="text" id="fUrl" placeholder="https://..." autocapitalize="off" autocomplete="off"></div>
     <div class="field"><label>Short Description (optional)</label><input type="text" id="fDesc" placeholder="e.g. Daily stock tracker"></div>
-    <div class="field"><label>Choose Icon</label><div class="emoji-row" id="emojiRow"></div></div>
+    <div class="field"><label>Icon Image URL (optional)</label><input type="text" id="fIconUrl" placeholder="Leave empty: the app's own icon is detected automatically" autocapitalize="off" autocomplete="off"></div>
+    <div class="field"><label>Backup Icon (used only if the app has no icon of its own)</label><div class="emoji-row" id="emojiRow"></div></div>
     <div class="field"><label>Or type any emoji</label><input type="text" id="fEmoji" placeholder="Paste or type any emoji, e.g. 🏗️" autocomplete="off"></div>
     <div class="actions">
       <button class="btn cancel" id="modalCancelBtn" type="button">Cancel</button>
@@ -443,7 +453,7 @@ function renderApps(){
     el.setAttribute('aria-label', niceName(a.name));
     el.innerHTML = `
       <button class="badge" type="button" aria-label="Delete" data-del="${escapeHtml(a.id)}">−</button>
-      <div class="icon" style="background:linear-gradient(160deg,${c1},${c2})"><span>${a.icon || '🔗'}</span></div>
+      <div class="icon" style="background:linear-gradient(160deg,${c1},${c2})"><span>${a.icon || '🔗'}</span>${a.iconUrl ? `<img src="${escapeHtml(a.iconUrl)}" alt="" referrerpolicy="no-referrer" decoding="async" draggable="false">` : ''}</div>
       <div class="label">${escapeHtml(niceName(a.name))}</div>`;
     frag.appendChild(el);
   });
@@ -458,6 +468,19 @@ function renderApps(){
   }
   grid.appendChild(frag);
   if (list.length) firstRender = false;
+}
+
+/* ===================== APP'S OWN ICON: load / fail handling ===================== */
+gridEl_init();
+function gridEl_init(){
+  const g = $('appGrid');
+  g.addEventListener('load', e=>{
+    const img = e.target; if (img.tagName !== 'IMG') return;
+    const icon = img.closest('.icon'); if (!icon) return;
+    if (img.naturalWidth && img.naturalWidth < 100) icon.classList.add('img-small');   // tiny favicon -> centred on white
+    icon.classList.add('img-ok');
+  }, true);
+  g.addEventListener('error', e=>{ if (e.target.tagName === 'IMG') e.target.remove(); }, true);  // keep the emoji
 }
 
 /* ===================== TAP / LONG-PRESS HANDLING (event delegation) ===================== */
@@ -502,8 +525,9 @@ function launchApp(tile){
 
   const o = document.createElement('div');
   o.className = 'launch';
-  o.style.cssText = `left:${r.left}px; top:${r.top}px; width:${r.width}px; height:${r.height}px; border-radius:${r.width*0.224}px; background:linear-gradient(160deg,${c1},${c2});`;
-  o.innerHTML = `<span class="em">${a.icon || '🔗'}</span><div class="spin"></div><div class="lname">${escapeHtml(niceName(a.name))}</div>`;
+  const okImg = icon.classList.contains('img-ok') ? icon.querySelector('img') : null;
+  o.style.cssText = `left:${r.left}px; top:${r.top}px; width:${r.width}px; height:${r.height}px; border-radius:${r.width*0.224}px; background:${okImg ? '#fff' : `linear-gradient(160deg,${c1},${c2})`};`;
+  o.innerHTML = `<span class="em">${okImg ? `<img src="${escapeHtml(okImg.src)}" alt="">` : (a.icon || '🔗')}</span><div class="spin"></div><div class="lname" ${okImg ? 'style="color:#1b2b40;text-shadow:none"' : ''}>${escapeHtml(niceName(a.name))}</div>`;
   document.body.appendChild(o);
   document.body.classList.add('launching');
   o.getBoundingClientRect(); // force layout so the transition starts from the icon rect
@@ -543,6 +567,7 @@ function loadAdminCfg(){
 }
 function applyAdminUI(){
   $('editBtn').classList.toggle('app-hidden', !adminCfg);
+  $('autoIconBtn').classList.toggle('app-hidden', !adminCfg);
   $('adminIco').textContent = adminCfg ? '🔓' : '🔒';
   $('adminLabel').textContent = adminCfg ? 'Lock' : 'Admin';
   $('adminBtn').classList.toggle('on', !!adminCfg);
@@ -626,6 +651,81 @@ async function saveAppsToGithub(message){
   }
 }
 
+
+/* ===================== AUTO-DETECT THE APP'S OWN ICON (admin only, one-time, result saved in apps.json) ===================== */
+const DEFAULT_GAS_ICON = /ssl\.gstatic\.com\/docs\/script\/images\/favicon/i;
+function withTimeout(promise, ms){ return Promise.race([promise, new Promise((_, rej)=> setTimeout(()=> rej(new Error('timeout')), ms))]); }
+
+async function fetchPageHtml(url){
+  const enc = encodeURIComponent(url);
+  const proxies = [
+    `https://api.allorigins.win/raw?url=${enc}`,
+    `https://corsproxy.io/?${enc}`
+  ];
+  for (const px of proxies){
+    try{
+      const r = await withTimeout(fetch(px), 7000);
+      if (r.ok){ const t = await r.text(); if (t && t.length > 50) return t; }
+    }catch(e){}
+  }
+  return '';
+}
+
+function imageLoads(src){
+  return new Promise(res=>{
+    const im = new Image(); im.referrerPolicy = 'no-referrer';
+    const t = setTimeout(()=> res(false), 6000);
+    im.onload = ()=>{ clearTimeout(t); res(im.naturalWidth > 0); };
+    im.onerror = ()=>{ clearTimeout(t); res(false); };
+    im.src = src;
+  });
+}
+
+async function detectIcon(pageUrl){
+  let base; try{ base = new URL(pageUrl); }catch(e){ return ''; }
+  const candidates = [];
+  const html = await fetchPageHtml(pageUrl);
+  if (html){
+    const doc = new DOMParser().parseFromString(html, 'text/html');
+    const pick = sel => [...doc.querySelectorAll(sel)];
+    const links = [
+      ...pick('link[rel~="apple-touch-icon"]'),
+      ...pick('link[rel~="icon"]'),
+      ...pick('link[rel="shortcut icon"]')
+    ];
+    links.forEach(l=>{ const h = l.getAttribute('href'); if (h) { try{ candidates.push(new URL(h, base).href); }catch(e){} } });
+    // Fallback: scan raw HTML for an icon URL (some pages inject it inside scripts)
+    const m = html.match(/rel=["'](?:shortcut )?icon["'][^>]*href=["']([^"']+)["']/i) || html.match(/href=["']([^"']+)["'][^>]*rel=["'](?:shortcut )?icon["']/i);
+    if (m){ try{ candidates.push(new URL(m[1].replace(/&amp;/g,'&'), base).href); }catch(e){} }
+  }
+  if (base.hostname !== 'script.google.com'){
+    candidates.push(base.origin + '/favicon.ico');
+    candidates.push(`https://www.google.com/s2/favicons?domain=${base.hostname}&sz=128`);
+  }
+  for (const c of [...new Set(candidates)]){
+    if (DEFAULT_GAS_ICON.test(c)) continue;       // Google's generic Apps Script icon isn't the app's own icon
+    if (await imageLoads(c)) return c;
+  }
+  return '';
+}
+
+async function detectAllIcons(){
+  if (!adminCfg) return;
+  const todo = apps.filter(a => !a.iconUrl);
+  if (!todo.length){ showToast('update', 'All apps already have icons'); return; }
+  $('autoIconBtn').disabled = true;
+  showToast('update', `Detecting icons for ${todo.length} app(s)...`);
+  let found = 0;
+  const results = await Promise.all(todo.map(async a=>{ try{ return [a, await detectIcon(a.url)]; }catch(e){ return [a, '']; } }));
+  results.forEach(([a, icon])=>{ if (icon){ a.iconUrl = icon; found++; } });
+  $('autoIconBtn').disabled = false;
+  if (!found){ showToast('err', "Couldn't read any app icons. Paste an Icon Image URL in Edit instead."); return; }
+  const ok = await saveAppsToGithub(`Auto-detect icons for ${found} app(s)`);
+  renderApps();
+  showToast(ok ? 'add' : 'err', ok ? `${found} icon(s) detected and saved` : 'Detected, but could not save to GitHub');
+}
+$('autoIconBtn').addEventListener('click', detectAllIcons);
+
 /* ===================== ADD / EDIT SHEET ===================== */
 function buildEmojiRow(){
   const row = $('emojiRow'); row.innerHTML = '';
@@ -652,6 +752,7 @@ function openModal(id){
   $('fName').value = ex ? ex.name : '';
   $('fUrl').value = ex ? ex.url : '';
   $('fDesc').value = ex ? (ex.desc || '') : '';
+  $('fIconUrl').value = ex ? (ex.iconUrl || '') : '';
   selectedEmoji = ex ? (ex.icon || EMOJI_CHOICES[0]) : EMOJI_CHOICES[0];
   $('fEmoji').value = '';
   buildEmojiRow();
@@ -672,11 +773,17 @@ $('modalSaveBtn').addEventListener('click', async ()=>{
   $('modalSaveBtn').disabled = true; $('modalSaveBtn').textContent = 'Saving...';
   const wasEditing = !!editingId;
   const backup = JSON.parse(JSON.stringify(apps));
+  const prev = wasEditing ? apps.find(a=>a.id === editingId) : null;
+  let iconUrl = $('fIconUrl').value.trim();
+  if (!iconUrl){
+    if (prev && prev.iconUrl && prev.url === url) iconUrl = prev.iconUrl;           // keep the icon we already found
+    else { $('modalSaveBtn').textContent = 'Detecting icon...'; try{ iconUrl = await detectIcon(url); }catch(e){ iconUrl = ''; } $('modalSaveBtn').textContent = 'Saving...'; }
+  }
   if (editingId){
     const e = apps.find(a=>a.id === editingId);
-    if (e){ e.name = name; e.url = url; e.desc = desc; e.icon = selectedEmoji; }
+    if (e){ e.name = name; e.url = url; e.desc = desc; e.icon = selectedEmoji; e.iconUrl = iconUrl; }
   } else {
-    apps.push({ id: Date.now().toString(36) + Math.random().toString(36).slice(2,6), name, url, desc, icon: selectedEmoji, addedAt: new Date().toISOString() });
+    apps.push({ id: Date.now().toString(36) + Math.random().toString(36).slice(2,6), name, url, desc, icon: selectedEmoji, iconUrl, addedAt: new Date().toISOString() });
   }
   const ok = await saveAppsToGithub(wasEditing ? `Update app: ${name}` : `Add app: ${name}`);
   $('modalSaveBtn').disabled = false; $('modalSaveBtn').textContent = 'Save';

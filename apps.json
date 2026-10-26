@@ -28,11 +28,12 @@
     },
     {
       "id": "mv0u2cswdcv3",
-      "name": "AGREEMENT FINDER",
-      "url": "https://script.google.com/macros/s/AKfycbxCIZBBfwAPmzeCAkvMVBtJy1hYTzDuPmrczuoPkP6vST0RqFlynrFRt0yqA-w0sPgK/exec",
-      "desc": "DOWNLOAD AGREEMENT",
-      "icon": "🧾",
-      "addedAt": "2026-10-09T10:39:20.912Z"
+      "name": "AGREEMENT STATUS",
+      "url": "https://script.google.com/macros/s/AKfycbxn2FoniQ6wdn81Vr0fqF7dWB_PnUJGEdOw35LR8S2FerWX2Zs8C2Jq5JNkXNf8LpoxKg/exec",
+      "desc": "ALL AGREEMENT AND DOCUMENT COPY",
+      "icon": "📝",
+      "addedAt": "2026-10-09T10:39:20.912Z",
+      "iconUrl": ""
     },
     {
       "id": "mv6ip4mv9cvu",

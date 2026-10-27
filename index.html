@@ -225,9 +225,34 @@
   .toast-body{min-width:0; display:flex; flex-direction:column; gap:1px;}
   .toast-title{font-size:12px; font-weight:800; letter-spacing:.4px; text-transform:uppercase;}
   .toast-msg{font-size:13px; color:var(--mute); font-weight:600; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+  .toast.err .toast-msg{white-space:normal; line-height:1.4; color:#fff;}
   @keyframes toastIn{from{opacity:0; transform:translateY(-30px) scale(.9);}to{opacity:1; transform:none;}}
   @keyframes toastOut{to{opacity:0; transform:translateY(-20px) scale(.94);}}
   @keyframes pop{0%{transform:scale(0) rotate(-30deg);}60%{transform:scale(1.2) rotate(6deg);}100%{transform:none;}}
+
+
+  /* ============ IN-APP VIEWER (for apps set to "Open inside Workshop Apps") ============ */
+  .viewer{position:fixed; inset:0; z-index:8000; display:flex; flex-direction:column; background:#fff; transform-origin:50% 60%; animation:viewerIn .45s var(--ease);}
+  @keyframes viewerIn{from{opacity:0; transform:scale(.92) translateY(30px); border-radius:28px;}to{opacity:1; transform:none;}}
+  .viewer.closing{animation:viewerOut .3s ease forwards;}
+  @keyframes viewerOut{to{opacity:0; transform:scale(.94) translateY(24px);}}
+  .vbar{flex:0 0 auto; display:flex; align-items:center; gap:10px; padding:calc(var(--safe-t) + 6px) 10px 6px; background:linear-gradient(160deg,#0b1d33,#12395c); color:#fff;}
+  .vbar button{border:none; background:rgba(255,255,255,.16); color:#fff; border-radius:12px; padding:7px 13px; font-size:14px; font-weight:700; cursor:pointer; font-family:inherit; transition:transform .15s var(--spring);}
+  .vbar button:active{transform:scale(.92);}
+  .vtitle{flex:1; min-width:0; text-align:center; font-size:14px; font-weight:700; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+  .vbody{position:relative; flex:1; min-height:0;}
+  .vbody iframe{position:absolute; inset:0; width:100%; height:100%; border:0; background:#fff;}
+  .vload{position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:14px; background:#f3f6fb; color:#4a5a70; font-weight:700; font-size:14px; z-index:2; transition:opacity .3s ease;}
+  .vload.done{opacity:0; pointer-events:none;}
+  .vload .spin2{width:34px; height:34px; border-radius:50%; border:3px solid #d5deeb; border-top-color:#2b6fe0; animation:spin .8s linear infinite;}
+  .seg{display:flex; gap:6px; background:rgba(255,255,255,.1); padding:4px; border-radius:14px;}
+  .seg button{flex:1; border:none; background:none; color:var(--mute); padding:9px 6px; border-radius:11px; font-size:13px; font-weight:700; cursor:pointer; font-family:inherit; transition:background .2s, color .2s, transform .15s var(--spring);}
+  .seg button:active{transform:scale(.95);}
+  .seg button.on{background:#fff; color:#12263d;}
+  .hint{font-size:11.5px; color:var(--mute); line-height:1.5; margin-top:8px;}
+  .check{display:flex; gap:10px; align-items:flex-start; font-size:13px; line-height:1.45; color:#fff; cursor:pointer;}
+  .check input{width:20px; height:20px; margin-top:1px; accent-color:#4da3ff; flex:0 0 auto;}
+  .check small{display:block; color:var(--mute); font-size:11.5px; margin-top:2px;}
 
   @media (prefers-reduced-motion:reduce){
     *,*::before,*::after{animation-duration:.01ms !important; animation-delay:0s !important; transition-duration:.01ms !important;}
@@ -255,6 +280,12 @@
   </div>
 </main>
 
+<!-- IN-APP VIEWER -->
+<div class="viewer app-hidden" id="viewer">
+  <div class="vbar"><button id="vBack" type="button">‹ Home</button><div class="vtitle" id="vTitle"></div><button id="vReload" type="button" aria-label="Reload">↻</button></div>
+  <div class="vbody"><div class="vload" id="vLoad"><div class="spin2"></div><div id="vLoadName">Opening...</div></div><iframe id="vFrame" title="App" allow="clipboard-write; fullscreen; downloads"></iframe></div>
+</div>
+
 <!-- DOCK -->
 <nav class="dock" id="dock">
   <button class="dock-btn" id="installBtn"><div class="dock-ico">📲</div><span class="t">Install</span></button>
@@ -270,9 +301,13 @@
     <div class="field"><label>App Name</label><input type="text" id="fName" placeholder="e.g. Stock Dashboard"></div>
     <div class="field"><label>Link (URL)</label><input type="text" id="fUrl" placeholder="https://..." autocapitalize="off" autocomplete="off"></div>
     <div class="field"><label>Short Description (optional)</label><input type="text" id="fDesc" placeholder="e.g. Daily stock tracker"></div>
-    <div class="field"><label>Icon Image URL (optional)</label><input type="text" id="fIconUrl" placeholder="Leave empty: the app's own icon is detected automatically" autocapitalize="off" autocomplete="off"></div>
-    <div class="field"><label>Backup Icon (used only if the app has no icon of its own)</label><div class="emoji-row" id="emojiRow"></div></div>
+    <div class="field"><label>Icon Type</label>
+      <div class="seg" id="iconSeg"><button type="button" data-mode="auto">Auto</button><button type="button" data-mode="emoji">Emoji</button><button type="button" data-mode="url">Image URL</button></div>
+      <div class="hint" id="iconHint"></div></div>
+    <div class="field" id="urlField"><label>Icon Image URL</label><input type="text" id="fIconUrl" placeholder="https://.../icon.png" autocapitalize="off" autocomplete="off"></div>
+    <div class="field"><label id="emojiLabel">Emoji Icon</label><div class="emoji-row" id="emojiRow"></div></div>
     <div class="field"><label>Or type any emoji</label><input type="text" id="fEmoji" placeholder="Paste or type any emoji, e.g. 🏗️" autocomplete="off"></div>
+    <div class="field"><label class="check"><input type="checkbox" id="fEmbed"><span>Open inside Workshop Apps<small>Hides Google's "created by an Apps Script user" bar. This app will open a little slower. Leave off for the fastest opening.</small></span></label></div>
     <div class="actions">
       <button class="btn cancel" id="modalCancelBtn" type="button">Cancel</button>
       <button class="btn save" id="modalSaveBtn" type="button">Save</button>
@@ -386,7 +421,7 @@ function showToast(type, msg){
   el.innerHTML = `<div class="toast-icon">${cfg.icon}</div><div class="toast-body"><div class="toast-title">${cfg.title}</div><div class="toast-msg">${escapeHtml(msg)}</div></div>`;
   $('toastStack').appendChild(el);
   const remove = () => { if (!el.isConnected) return; el.classList.add('leaving'); setTimeout(()=> el.remove(), 300); };
-  const t = setTimeout(remove, 2800);
+  const t = setTimeout(remove, type === 'err' ? 9000 : 2800);
   el.addEventListener('click', ()=>{ clearTimeout(t); remove(); });
 }
 
@@ -453,7 +488,7 @@ function renderApps(){
     el.setAttribute('aria-label', niceName(a.name));
     el.innerHTML = `
       <button class="badge" type="button" aria-label="Delete" data-del="${escapeHtml(a.id)}">−</button>
-      <div class="icon" style="background:linear-gradient(160deg,${c1},${c2})"><span>${a.icon || '🔗'}</span>${a.iconUrl ? `<img src="${escapeHtml(a.iconUrl)}" alt="" referrerpolicy="no-referrer" decoding="async" draggable="false">` : ''}</div>
+      <div class="icon" style="background:linear-gradient(160deg,${c1},${c2})"><span>${a.icon || '🔗'}</span>${(a.iconUrl && a.iconMode !== 'emoji') ? `<img src="${escapeHtml(a.iconUrl)}" alt="" referrerpolicy="no-referrer" decoding="async" draggable="false">` : ''}</div>
       <div class="label">${escapeHtml(niceName(a.name))}</div>`;
     frag.appendChild(el);
   });
@@ -477,6 +512,7 @@ function gridEl_init(){
   g.addEventListener('load', e=>{
     const img = e.target; if (img.tagName !== 'IMG') return;
     const icon = img.closest('.icon'); if (!icon) return;
+    if (GOOGLE_FAVICON_SVC.test(img.src) && img.naturalWidth <= 16){ img.remove(); return; }   // old generic globe -> show emoji instead
     if (img.naturalWidth && img.naturalWidth < 100) icon.classList.add('img-small');   // tiny favicon -> centred on white
     icon.classList.add('img-ok');
   }, true);
@@ -511,12 +547,37 @@ gridEl.addEventListener('click', e=>{
   launchApp(tile);
 });
 
+
+/* ===================== IN-APP VIEWER ===================== */
+let viewerOpen = false, viewerApp = null;
+function openViewer(a){
+  const v = $('viewer'), f = $('vFrame');
+  viewerApp = a; viewerOpen = true;
+  $('vTitle').textContent = niceName(a.name);
+  $('vLoadName').textContent = 'Opening ' + niceName(a.name) + '...';
+  $('vLoad').classList.remove('done');
+  v.classList.remove('app-hidden', 'closing');
+  f.onload = ()=> $('vLoad').classList.add('done');
+  f.src = a.url;
+  history.pushState({ viewer:1 }, '');
+}
+function hideViewer(){
+  if (!viewerOpen) return;
+  viewerOpen = false;
+  const v = $('viewer'); v.classList.add('closing');
+  setTimeout(()=>{ v.classList.add('app-hidden'); v.classList.remove('closing'); $('vFrame').src = 'about:blank'; }, 280);
+}
+$('vBack').addEventListener('click', ()=>{ if (viewerOpen) history.back(); });   // popstate hides it
+$('vReload').addEventListener('click', ()=>{ if (!viewerApp) return; $('vLoad').classList.remove('done'); $('vFrame').src = viewerApp.url; });
+window.addEventListener('popstate', ()=>{ if (viewerOpen) hideViewer(); });
+
 /* ===================== LAUNCH (iOS-style zoom, then direct navigation) ===================== */
 let launching = false;
 function launchApp(tile){
   if (launching) return;
   const a = apps.find(x => x.id === tile.dataset.id);
   if (!a || !a.url) return;
+  if (a.embed){ openViewer(a); return; }      // this app is set to open inside Workshop Apps
   launching = true;
 
   const icon = tile.querySelector('.icon');
@@ -559,7 +620,19 @@ function setEditMode(on){
   $('editBtn').querySelector('.dock-ico').textContent = editMode ? '✅' : '✏️';
 }
 $('editBtn').addEventListener('click', ()=> setEditMode(!editMode));
-document.addEventListener('keydown', e=>{ if (e.key === 'Escape'){ if (editMode) setEditMode(false); closeModal(); $('adminBackdrop').classList.add('app-hidden'); } });
+document.addEventListener('keydown', e=>{ if (e.key === 'Escape'){ if (viewerOpen) history.back(); if (editMode) setEditMode(false); closeModal(); $('adminBackdrop').classList.add('app-hidden'); } });
+
+
+/* ===================== READABLE GITHUB ERRORS ===================== */
+function explainGithub(status, where){
+  if (status === 401) return 'GitHub rejected the token (401). It is wrong, expired or revoked. Tap Lock, then Admin, and enter a new token.';
+  if (status === 403) return 'GitHub says this token is not allowed to do that (403). Give the token "Contents: Read and write" permission.';
+  if (status === 404 && where === 'repo') return 'Repository not found (404). Check the GitHub username and repository name spelling, and that the token has access to that repository.';
+  if (status === 404 && where === 'branch') return 'Branch not found (404). Check the branch name (usually "main").';
+  if (status === 404) return 'GitHub returned 404 while saving. Usually this means the token has only READ access, or the username/repository/branch typed in Admin is wrong. Create the token again with Repository access → this repository, and Contents → Read and write, then Lock → Admin and paste it.';
+  if (status === 409 || status === 422) return 'The file changed on GitHub at the same moment (' + status + '). Please try again.';
+  return 'GitHub error (' + status + '). Please try again.';
+}
 
 /* ===================== ADMIN ===================== */
 function loadAdminCfg(){
@@ -600,13 +673,13 @@ $('adminSaveBtn').addEventListener('click', async ()=>{
   if (!owner || !repo || !token){ showAdminErr('Username, repository and token are all required.'); return; }
   $('adminSaveBtn').disabled = true; $('adminSaveBtn').textContent = 'Checking...';
   try{
-    const r = await fetch(`${GITHUB_API}/repos/${owner}/${repo}/contents/${DATA_FILE}?ref=${branch}`, {
-      headers:{ Authorization:`token ${token}`, Accept:'application/vnd.github+json' }
-    });
-    if (!r.ok && r.status !== 404){
-      const t = await r.text().catch(()=> '');
-      throw new Error('Could not connect to GitHub (' + r.status + '). Check the token, repository and username.\n' + t.slice(0,150));
-    }
+    const h = { Authorization:`token ${token}`, Accept:'application/vnd.github+json' };
+    const rr = await fetch(`${GITHUB_API}/repos/${owner}/${repo}`, { headers:h });
+    if (!rr.ok) throw new Error(explainGithub(rr.status, 'repo'));
+    const rb = await fetch(`${GITHUB_API}/repos/${owner}/${repo}/branches/${encodeURIComponent(branch)}`, { headers:h });
+    if (!rb.ok) throw new Error(explainGithub(rb.status, 'branch'));
+    const rep = await rr.json();
+    if (rep.permissions && rep.permissions.push === false) throw new Error('This token/account has no write access to ' + owner + '/' + repo + '. Use a token with "Contents: Read and write".');
     adminCfg = { owner, repo, branch, token };
     localStorage.setItem('ar_admin_cfg', JSON.stringify(adminCfg));
     $('adminBackdrop').classList.add('app-hidden');
@@ -632,7 +705,7 @@ async function saveAppsToGithub(message){
     if (getR.status === 200){ sha = (await getR.json()).sha; }
     else if (getR.status !== 404){
       const t = await getR.text().catch(()=> '');
-      throw new Error('Could not fetch the latest version from GitHub (' + getR.status + '). ' + t.slice(0,150));
+      throw new Error(explainGithub(getR.status, 'repo'));
     }
     const body = { message, content, branch };
     if (sha) body.sha = sha;
@@ -640,8 +713,7 @@ async function saveAppsToGithub(message){
       method:'PUT', headers:{ ...headers, 'Content-Type':'application/json' }, body: JSON.stringify(body)
     });
     if (!r.ok){
-      const t = await r.text().catch(()=> '');
-      throw new Error('Save to GitHub failed (' + r.status + '). ' + t.slice(0,150));
+      throw new Error(explainGithub(r.status, 'save'));
     }
     lastSig = JSON.stringify(apps); writeCache();
     return true;
@@ -671,11 +743,13 @@ async function fetchPageHtml(url){
   return '';
 }
 
+const GOOGLE_FAVICON_SVC = /google\.com\/s2\/favicons/i;
 function imageLoads(src){
   return new Promise(res=>{
     const im = new Image(); im.referrerPolicy = 'no-referrer';
     const t = setTimeout(()=> res(false), 6000);
-    im.onload = ()=>{ clearTimeout(t); res(im.naturalWidth > 0); };
+    // Google's favicon service returns a tiny generic globe when a site has no icon. That is not the app's icon.
+    im.onload = ()=>{ clearTimeout(t); res(GOOGLE_FAVICON_SVC.test(src) ? im.naturalWidth > 16 : im.naturalWidth > 0); };
     im.onerror = ()=>{ clearTimeout(t); res(false); };
     im.src = src;
   });
@@ -700,7 +774,7 @@ async function detectIcon(pageUrl){
   }
   if (base.hostname !== 'script.google.com'){
     candidates.push(base.origin + '/favicon.ico');
-    candidates.push(`https://www.google.com/s2/favicons?domain=${base.hostname}&sz=128`);
+    candidates.push(`https://www.google.com/s2/favicons?domain=${base.hostname}&sz=128`);   // checked below: the generic 16px globe is rejected
   }
   for (const c of [...new Set(candidates)]){
     if (DEFAULT_GAS_ICON.test(c)) continue;       // Google's generic Apps Script icon isn't the app's own icon
@@ -711,13 +785,13 @@ async function detectIcon(pageUrl){
 
 async function detectAllIcons(){
   if (!adminCfg) return;
-  const todo = apps.filter(a => !a.iconUrl);
+  const todo = apps.filter(a => !a.iconUrl && a.iconMode !== 'emoji');
   if (!todo.length){ showToast('update', 'All apps already have icons'); return; }
   $('autoIconBtn').disabled = true;
   showToast('update', `Detecting icons for ${todo.length} app(s)...`);
   let found = 0;
   const results = await Promise.all(todo.map(async a=>{ try{ return [a, await detectIcon(a.url)]; }catch(e){ return [a, '']; } }));
-  results.forEach(([a, icon])=>{ if (icon){ a.iconUrl = icon; found++; } });
+  results.forEach(([a, icon])=>{ if (icon){ a.iconUrl = icon; a.iconMode = 'auto'; found++; } });
   $('autoIconBtn').disabled = false;
   if (!found){ showToast('err', "Couldn't read any app icons. Paste an Icon Image URL in Edit instead."); return; }
   const ok = await saveAppsToGithub(`Auto-detect icons for ${found} app(s)`);
@@ -745,6 +819,21 @@ $('fEmoji').addEventListener('input', e=>{
   const v = e.target.value.trim();
   if (v){ selectedEmoji = Array.from(v).slice(0, 3).join(''); $('emojiRow').querySelectorAll('.emoji-pick').forEach(x=>x.classList.remove('active')); }
 });
+let iconMode = 'auto';
+const ICON_HINTS = {
+  auto:  "The app's own icon is detected automatically when you save. If it has none, the emoji below is used.",
+  emoji: "Always uses the emoji you pick below. No automatic icon.",
+  url:   "Paste a direct link to any image (png, jpg, ico, svg)."
+};
+function setIconMode(m){
+  iconMode = m;
+  $('iconSeg').querySelectorAll('button').forEach(b => b.classList.toggle('on', b.dataset.mode === m));
+  $('iconHint').textContent = ICON_HINTS[m];
+  $('urlField').classList.toggle('app-hidden', m !== 'url');
+  $('emojiLabel').textContent = m === 'emoji' ? 'Choose Emoji' : 'Backup Emoji (if no image is found)';
+}
+$('iconSeg').addEventListener('click', e=>{ const b = e.target.closest('button[data-mode]'); if (b) setIconMode(b.dataset.mode); });
+
 function openModal(id){
   editingId = id || null;
   const ex = editingId ? apps.find(a=>a.id === editingId) : null;
@@ -753,6 +842,8 @@ function openModal(id){
   $('fUrl').value = ex ? ex.url : '';
   $('fDesc').value = ex ? (ex.desc || '') : '';
   $('fIconUrl').value = ex ? (ex.iconUrl || '') : '';
+  $('fEmbed').checked = ex ? !!ex.embed : false;
+  setIconMode(ex ? (ex.iconMode || (ex.iconUrl ? 'auto' : 'emoji')) : 'auto');
   selectedEmoji = ex ? (ex.icon || EMOJI_CHOICES[0]) : EMOJI_CHOICES[0];
   $('fEmoji').value = '';
   buildEmojiRow();
@@ -774,16 +865,20 @@ $('modalSaveBtn').addEventListener('click', async ()=>{
   const wasEditing = !!editingId;
   const backup = JSON.parse(JSON.stringify(apps));
   const prev = wasEditing ? apps.find(a=>a.id === editingId) : null;
-  let iconUrl = $('fIconUrl').value.trim();
-  if (!iconUrl){
-    if (prev && prev.iconUrl && prev.url === url) iconUrl = prev.iconUrl;           // keep the icon we already found
+  let iconUrl = '';
+  if (iconMode === 'url'){
+    iconUrl = $('fIconUrl').value.trim();
+    if (!iconUrl){ $('modalSaveBtn').disabled = false; $('modalSaveBtn').textContent = 'Save'; showToast('err', 'Paste the image link, or choose Auto / Emoji.'); return; }
+  } else if (iconMode === 'auto'){
+    const keep = prev && prev.iconMode !== 'emoji' && prev.iconMode !== 'url' && prev.iconUrl && prev.url === url && !GOOGLE_FAVICON_SVC.test(prev.iconUrl);
+    if (keep) iconUrl = prev.iconUrl;                                                  // keep the icon we already found
     else { $('modalSaveBtn').textContent = 'Detecting icon...'; try{ iconUrl = await detectIcon(url); }catch(e){ iconUrl = ''; } $('modalSaveBtn').textContent = 'Saving...'; }
-  }
+  }                                                                                    // emoji mode: no image at all
   if (editingId){
     const e = apps.find(a=>a.id === editingId);
-    if (e){ e.name = name; e.url = url; e.desc = desc; e.icon = selectedEmoji; e.iconUrl = iconUrl; }
+    if (e){ e.name = name; e.url = url; e.desc = desc; e.icon = selectedEmoji; e.iconUrl = iconUrl; e.iconMode = iconMode; e.embed = $('fEmbed').checked; }
   } else {
-    apps.push({ id: Date.now().toString(36) + Math.random().toString(36).slice(2,6), name, url, desc, icon: selectedEmoji, iconUrl, addedAt: new Date().toISOString() });
+    apps.push({ id: Date.now().toString(36) + Math.random().toString(36).slice(2,6), name, url, desc, icon: selectedEmoji, iconUrl, iconMode, embed: $('fEmbed').checked, addedAt: new Date().toISOString() });
   }
   const ok = await saveAppsToGithub(wasEditing ? `Update app: ${name}` : `Add app: ${name}`);
   $('modalSaveBtn').disabled = false; $('modalSaveBtn').textContent = 'Save';

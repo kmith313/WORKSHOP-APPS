@@ -1,15 +1,6 @@
 {
   "apps": [
     {
-      "id": "msq9bcnwb701",
-      "name": "COMPLAIN SEARCH",
-      "url": "https://kmith313.github.io/complain-pr-status/",
-      "desc": "",
-      "icon": "🌍",
-      "addedAt": "2026-08-12T15:41:22.268Z",
-      "iconUrl": "https://www.google.com/s2/favicons?domain=kmith313.github.io&sz=128"
-    },
-    {
       "id": "mswlq3ll1mqk",
       "name": "DAMAGE COMPRATIVE AND PROGRASSIVE",
       "url": "https://script.google.com/macros/s/AKfycbw9r5M468FLU3QjcIdSDz1kGr2u-lu1ezXdmbOVw5Lh4homtZQ6PUF0VEcIm0ggG_22CQ/exec",

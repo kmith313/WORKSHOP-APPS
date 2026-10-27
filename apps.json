@@ -78,6 +78,15 @@
       "icon": "📊",
       "iconUrl": "https://1912.uppcl.org/favicon.ico",
       "addedAt": "2026-10-27T07:22:23.181Z"
+    },
+    {
+      "id": "mvqd1imeaf7w",
+      "name": "ALL Google sheet",
+      "url": "https://docs.google.com/spreadsheets/d/1vHMuk_Ce0j4ckU3mIyeQpkxof_rZWYR4L1fUQr0IRpU/edit?gid=0#gid=0",
+      "desc": "",
+      "icon": "📋",
+      "iconUrl": "https://docs.google.com/favicon.ico",
+      "addedAt": "2026-10-27T07:24:48.902Z"
     }
   ]
 }

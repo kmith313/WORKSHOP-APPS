@@ -1,4 +1,4 @@
-const CACHE = 'workshop-apps-v2';
+const CACHE = 'workshop-apps-v3';
 const ASSETS = ['./', './index.html', './manifest.json', './icon-192.png', './icon-512.png'];
 // apps.json is intentionally NOT cached here: it must always come fresh from the network
 // so newly added apps show up immediately for every viewer.

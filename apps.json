@@ -39,12 +39,12 @@
     {
       "id": "mvfas9xlk2ad",
       "name": "TF-Tracker",
-      "url": "https://kmith313.github.io/TF-TRACKING-SUPABASE/",
+      "url": "https://kmith313.github.io/TRACKING-OF-TRANSFORMER/index.html",
       "desc": "",
       "icon": "🔗",
       "addedAt": "2026-10-19T13:36:10.569Z",
-      "iconMode": "auto",
-      "iconUrl": "",
+      "iconMode": "url",
+      "iconUrl": "https://kmith313.github.io/TF-TRACKING-SUPABASE/emblem.png",
       "embed": true
     },
     {

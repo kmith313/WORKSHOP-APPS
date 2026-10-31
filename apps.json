@@ -85,6 +85,17 @@
       "iconUrl": "https://docs.google.com/favicon.ico",
       "addedAt": "2026-10-27T07:24:48.902Z",
       "iconMode": "auto"
+    },
+    {
+      "id": "mvw9tyucshe0",
+      "name": "SAP",
+      "url": "https://webgui.erp.uppclonline.com/sap/bc/gui/sap/its/webgui?sap-client=300&sap-language=EN%23",
+      "desc": "",
+      "icon": "🔗",
+      "iconUrl": "",
+      "iconMode": "auto",
+      "embed": true,
+      "addedAt": "2026-10-31T10:41:34.884Z"
     }
   ]
 }

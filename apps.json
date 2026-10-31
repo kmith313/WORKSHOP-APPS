@@ -85,6 +85,17 @@
       "iconUrl": "https://docs.google.com/favicon.ico",
       "addedAt": "2026-10-27T07:24:48.902Z",
       "iconMode": "auto"
+    },
+    {
+      "id": "mvwa4vkz02pk",
+      "name": "SAP LOGON",
+      "url": "https://webgui.erp.uppclonline.com/sap/bc/gui/sap/its/webgui",
+      "desc": "",
+      "icon": "🔗",
+      "iconUrl": "",
+      "iconMode": "auto",
+      "embed": false,
+      "addedAt": "2026-10-31T10:50:03.875Z"
     }
   ]
 }

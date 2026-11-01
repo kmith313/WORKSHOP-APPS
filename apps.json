@@ -92,8 +92,8 @@
       "url": "https://webgui.erp.uppclonline.com/sap/bc/gui/sap/its/webgui",
       "desc": "",
       "icon": "🔗",
-      "iconUrl": "",
-      "iconMode": "auto",
+      "iconUrl": "https://www.google.com/imgres?q=sap%20logon%20icon%204k&imgurl=https%3A%2F%2Flogowik.com%2Fcontent%2Fuploads%2Fimages%2Fsap2729.logowik.com.webp&imgrefurl=https%3A%2F%2Flogowik.com%2Fsap-vector-logo-151.html&docid=QxKtgI-1U78zmM&tbnid=8vjJqjT89pX4OM&vet=12ahUKEwiy0brP6OWXAxVPluEIHX1HMNkQnPAOegUInQEQAA..i&w=866&h=650&hcb=2&ved=2ahUKEwiy0brP6OWXAxVPluEIHX1HMNkQnPAOegUInQEQAA",
+      "iconMode": "url",
       "embed": false,
       "addedAt": "2026-10-31T10:50:03.875Z"
     }

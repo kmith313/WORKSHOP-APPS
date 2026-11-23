@@ -16,9 +16,7 @@
       "desc": "",
       "icon": "🏭",
       "addedAt": "2026-08-27T02:46:17.916Z",
-      "iconMode": "emoji",
-      "iconUrl": "",
-      "embed": false
+      "iconMode": "emoji"
     },
     {
       "id": "mv0u2cswdcv3",
@@ -39,15 +37,13 @@
       "iconMode": "emoji"
     },
     {
-      "id": "mvfas9xlk2ad",
-      "name": "TF-Tracker",
-      "url": "https://ewdazamgarh.github.io/TRANSFORMER-TRACKER/",
+      "id": "mvqcwa9mrse9",
+      "name": "PR /1912 Complaint Search",
+      "url": "https://executiveengineerashish.github.io/Transformer-Tracking-/",
       "desc": "",
-      "icon": "🔗",
-      "addedAt": "2026-10-19T13:36:10.569Z",
-      "iconMode": "url",
-      "iconUrl": "https://kmith313.github.io/TF-TRACKING-SUPABASE/emblem.png",
-      "embed": true
+      "icon": "🔍",
+      "addedAt": "2026-10-27T07:20:44.794Z",
+      "iconMode": "emoji"
     },
     {
       "id": "mvqcye6ln229",
@@ -57,8 +53,7 @@
       "icon": "📊",
       "iconUrl": "https://1912.uppcl.org/favicon.ico",
       "addedAt": "2026-10-27T07:22:23.181Z",
-      "iconMode": "url",
-      "embed": false
+      "iconMode": "auto"
     },
     {
       "id": "mvqd1imeaf7w",
@@ -69,17 +64,6 @@
       "iconUrl": "https://docs.google.com/favicon.ico",
       "addedAt": "2026-10-27T07:24:48.902Z",
       "iconMode": "auto"
-    },
-    {
-      "id": "mvwa4vkz02pk",
-      "name": "SAP LOGON",
-      "url": "https://webgui.erp.uppclonline.com/sap/bc/gui/sap/its/webgui",
-      "desc": "",
-      "icon": "🔗",
-      "iconUrl": "data:image/png;base64,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",
-      "iconMode": "url",
-      "embed": false,
-      "addedAt": "2026-10-31T10:50:03.875Z"
     }
   ]
 }

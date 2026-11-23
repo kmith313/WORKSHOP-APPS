@@ -102,6 +102,11 @@
     display:-webkit-box; -webkit-line-clamp:3; -webkit-box-orient:vertical; overflow:hidden; word-break:break-word; hyphens:auto;
   }
 
+  /* download tiles (.exe etc.) */
+  .dlbadge{position:absolute; right:-6px; bottom:-6px; z-index:4; width:26px; height:26px; border-radius:50%; background:#fff; color:#1b6be0;
+    display:flex; align-items:center; justify-content:center; font-size:14px; font-weight:800; box-shadow:0 3px 8px rgba(0,0,0,.35); pointer-events:none;}
+  .subl{font-size:10px; font-weight:700; color:var(--mute); margin-top:-5px; text-shadow:0 1px 4px rgba(0,0,0,.4);}
+
   /* add tile (admin) */
   .tile.add .icon{background:var(--glass); border:1.5px dashed rgba(255,255,255,.55); box-shadow:none; font-size:calc(var(--icon) * .5); font-weight:300;
     -webkit-backdrop-filter:blur(14px); backdrop-filter:blur(14px);}
@@ -245,6 +250,9 @@
   .vload{position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:14px; background:#f3f6fb; color:#4a5a70; font-weight:700; font-size:14px; z-index:2; transition:opacity .3s ease;}
   .vload.done{opacity:0; pointer-events:none;}
   .vload .spin2{width:34px; height:34px; border-radius:50%; border:3px solid #d5deeb; border-top-color:#2b6fe0; animation:spin .8s linear infinite;}
+  .check{display:flex; gap:10px; align-items:flex-start; font-size:13px; line-height:1.45; color:#fff; cursor:pointer;}
+  .check input{width:20px; height:20px; margin-top:1px; accent-color:#4da3ff; flex:0 0 auto;}
+  .check small{display:block; color:var(--mute); font-size:11.5px; margin-top:2px;}
   .seg{display:flex; gap:6px; background:rgba(255,255,255,.1); padding:4px; border-radius:14px;}
   .seg button{flex:1; border:none; background:none; color:var(--mute); padding:9px 6px; border-radius:11px; font-size:13px; font-weight:700; cursor:pointer; font-family:inherit; transition:background .2s, color .2s, transform .15s var(--spring);}
   .seg button:active{transform:scale(.95);}
@@ -283,7 +291,7 @@
 <!-- IN-APP VIEWER -->
 <div class="viewer app-hidden" id="viewer">
   <div class="vbar"><button id="vBack" type="button">‹ Home</button><div class="vtitle" id="vTitle"></div><button id="vReload" type="button" aria-label="Reload">↻</button></div>
-  <div class="vbody"><div class="vload" id="vLoad"><div class="spin2"></div><div id="vLoadName">Opening...</div></div><iframe id="vFrame" title="App" allow="clipboard-write; fullscreen; downloads"></iframe></div>
+  <div class="vbody" id="vBody"><div class="vload" id="vLoad"><div class="spin2"></div><div id="vLoadName">Opening...</div></div></div>
 </div>
 
 <!-- DOCK -->
@@ -468,6 +476,36 @@ function startPolling(){
 }
 document.addEventListener('visibilitychange', ()=>{ if (!document.hidden) loadApps(true); });
 
+/* ===================== FILE DOWNLOADS (.exe etc.) ===================== */
+const DL_EXT = /\.(exe|msi|apk|dmg|zip|rar|7z|pdf)(?:$|[?#])/i;
+function dlExt(url){
+  try{ const u = new URL(url); const m = u.pathname.match(DL_EXT) || (u.pathname + u.search).match(DL_EXT); return m ? m[1].toLowerCase() : ''; }catch(e){ return ''; }
+}
+function isDownloadApp(a){ return !!a && !!dlExt(a.url); }
+function normalizeDownloadUrl(url){
+  // A GitHub "blob" page is a web page, not the file. Use the raw file link instead.
+  return url.replace(/^(https:\/\/github\.com\/[^\/]+\/[^\/]+)\/blob\//i, '$1/raw/');
+}
+function dlLabel(ext){
+  return ({ exe:'Windows · .exe', msi:'Windows · .msi', apk:'Android · .apk', dmg:'Mac · .dmg', zip:'Download · .zip', rar:'Download · .rar', '7z':'Download · .7z', pdf:'PDF' })[ext] || 'Download';
+}
+function platformOk(ext){
+  const ua = navigator.userAgent || '';
+  if (ext === 'exe' || ext === 'msi') return /Windows/i.test(ua) ? '' : 'This is a Windows file. Open Workshop Apps on a Windows computer to download it.';
+  if (ext === 'apk') return /Android/i.test(ua) ? '' : 'This is an Android file. Open Workshop Apps on an Android phone to download it.';
+  if (ext === 'dmg') return (/Macintosh/i.test(ua) && !/Mobile/i.test(ua)) ? '' : 'This is a Mac file. Open Workshop Apps on a Mac to download it.';
+  return '';
+}
+function startDownload(a){
+  const ext = dlExt(a.url);
+  const problem = platformOk(ext);
+  if (problem){ showToast('err', problem); return; }
+  const link = document.createElement('a');
+  link.href = normalizeDownloadUrl(a.url); link.download = ''; link.rel = 'noopener';
+  link.style.display = 'none'; document.body.appendChild(link); link.click(); link.remove();
+  showToast('add', 'Download started: ' + niceName(a.name));
+}
+
 /* ===================== RENDER ===================== */
 let firstRender = true;
 function renderApps(){
@@ -482,14 +520,15 @@ function renderApps(){
     const [c1, c2] = gradFor(a);
     const el = document.createElement('a');
     el.className = 'tile';
-    el.href = a.url; el.dataset.id = a.id; el.draggable = false;
+    const dl = isDownloadApp(a);
+    el.href = dl ? normalizeDownloadUrl(a.url) : a.url; el.dataset.id = a.id; el.draggable = false;
     el.style.setProperty('--i', firstRender ? i : 0);
     if (!firstRender) el.style.animationDelay = '0s';
     el.setAttribute('aria-label', niceName(a.name));
     el.innerHTML = `
       <button class="badge" type="button" aria-label="Delete" data-del="${escapeHtml(a.id)}">−</button>
-      <div class="icon" style="background:linear-gradient(160deg,${c1},${c2})"><span>${a.icon || '🔗'}</span>${(a.iconUrl && a.iconMode !== 'emoji') ? `<img src="${escapeHtml(a.iconUrl)}" alt="" referrerpolicy="no-referrer" decoding="async" draggable="false">` : ''}</div>
-      <div class="label">${escapeHtml(niceName(a.name))}</div>`;
+      <div class="icon" style="background:linear-gradient(160deg,${c1},${c2})"><span>${a.icon || '🔗'}</span>${(a.iconUrl && a.iconMode !== 'emoji') ? `<img src="${escapeHtml(a.iconUrl)}" alt="" referrerpolicy="no-referrer" decoding="async" draggable="false">` : ''}${dl ? '<span class="dlbadge" aria-hidden="true">⬇</span>' : ''}</div>
+      <div class="label">${escapeHtml(niceName(a.name))}</div>${dl ? `<div class="subl">${dlLabel(dlExt(a.url))}</div>` : ''}`;
     frag.appendChild(el);
   });
 
@@ -549,26 +588,42 @@ gridEl.addEventListener('click', e=>{
 
 
 /* ===================== IN-APP VIEWER ===================== */
-let viewerOpen = false, viewerApp = null;
+let viewerOpen = false, viewerApp = null, viewerFrame = null;
+
+// A brand-new iframe every time. The page inside an iframe adds its own steps to the browser history,
+// so reusing one iframe (or calling history.back()) could step back INSIDE the app and show a blank page.
+function mountViewerFrame(url){
+  if (viewerFrame){ viewerFrame.remove(); viewerFrame = null; }
+  $('vLoad').classList.remove('done');
+  const f = document.createElement('iframe');
+  f.title = 'App';
+  f.setAttribute('allow', 'clipboard-write; fullscreen; downloads');
+  f.addEventListener('load', ()=> $('vLoad').classList.add('done'));
+  f.src = url;                       // set before inserting, so the first load doesn't add an extra history step
+  $('vBody').appendChild(f);
+  viewerFrame = f;
+}
 function openViewer(a){
-  const v = $('viewer'), f = $('vFrame');
   viewerApp = a; viewerOpen = true;
   $('vTitle').textContent = niceName(a.name);
   $('vLoadName').textContent = 'Opening ' + niceName(a.name) + '...';
-  $('vLoad').classList.remove('done');
-  v.classList.remove('app-hidden', 'closing');
-  f.onload = ()=> $('vLoad').classList.add('done');
-  f.src = a.url;
-  history.pushState({ viewer:1 }, '');
+  $('viewer').classList.remove('app-hidden', 'closing');
+  mountViewerFrame(a.url);
+  history.pushState({ viewer:1 }, '');   // lets the phone's Back button close the viewer
 }
 function hideViewer(){
   if (!viewerOpen) return;
   viewerOpen = false;
   const v = $('viewer'); v.classList.add('closing');
-  setTimeout(()=>{ v.classList.add('app-hidden'); v.classList.remove('closing'); $('vFrame').src = 'about:blank'; }, 280);
+  setTimeout(()=>{
+    v.classList.add('app-hidden'); v.classList.remove('closing');
+    if (viewerFrame){ viewerFrame.remove(); viewerFrame = null; }
+  }, 280);
 }
-$('vBack').addEventListener('click', ()=>{ if (viewerOpen) history.back(); });   // popstate hides it
-$('vReload').addEventListener('click', ()=>{ if (!viewerApp) return; $('vLoad').classList.remove('done'); $('vFrame').src = viewerApp.url; });
+// "Home" closes the viewer directly: always works on the first tap.
+$('vBack').addEventListener('click', hideViewer);
+$('vReload').addEventListener('click', ()=>{ if (viewerApp) mountViewerFrame(viewerApp.url); });
+// Phone / browser Back button
 window.addEventListener('popstate', ()=>{ if (viewerOpen) hideViewer(); });
 
 /* ===================== LAUNCH (iOS-style zoom, then direct navigation) ===================== */
@@ -577,6 +632,7 @@ function launchApp(tile){
   if (launching) return;
   const a = apps.find(x => x.id === tile.dataset.id);
   if (!a || !a.url) return;
+  if (isDownloadApp(a)){ startDownload(a); return; }     // .exe etc.: download, don't navigate
   if (a.embed){ openViewer(a); return; }      // this app is set to open inside Workshop Apps
   launching = true;
 
@@ -620,7 +676,7 @@ function setEditMode(on){
   $('editBtn').querySelector('.dock-ico').textContent = editMode ? '✅' : '✏️';
 }
 $('editBtn').addEventListener('click', ()=> setEditMode(!editMode));
-document.addEventListener('keydown', e=>{ if (e.key === 'Escape'){ if (viewerOpen) history.back(); if (editMode) setEditMode(false); closeModal(); $('adminBackdrop').classList.add('app-hidden'); } });
+document.addEventListener('keydown', e=>{ if (e.key === 'Escape'){ if (viewerOpen) hideViewer(); if (editMode) setEditMode(false); closeModal(); $('adminBackdrop').classList.add('app-hidden'); } });
 
 
 /* ===================== READABLE GITHUB ERRORS ===================== */
@@ -756,6 +812,7 @@ function imageLoads(src){
 }
 
 async function detectIcon(pageUrl){
+  if (dlExt(pageUrl)) return '';            // a file download link has no page/icon to read
   let base; try{ base = new URL(pageUrl); }catch(e){ return ''; }
   const candidates = [];
   const html = await fetchPageHtml(pageUrl);
@@ -842,7 +899,7 @@ function openModal(id){
   $('fUrl').value = ex ? ex.url : '';
   $('fDesc').value = ex ? (ex.desc || '') : '';
   $('fIconUrl').value = ex ? (ex.iconUrl || '') : '';
-  $('fEmbed').checked = ex ? !!ex.embed : false;
+  $('fEmbed').checked = ex ? !!(ex.embed || ex.openMode === 'tab') : false;
   setIconMode(ex ? (ex.iconMode || (ex.iconUrl ? 'auto' : 'emoji')) : 'auto');
   selectedEmoji = ex ? (ex.icon || EMOJI_CHOICES[0]) : EMOJI_CHOICES[0];
   $('fEmoji').value = '';
@@ -876,7 +933,7 @@ $('modalSaveBtn').addEventListener('click', async ()=>{
   }                                                                                    // emoji mode: no image at all
   if (editingId){
     const e = apps.find(a=>a.id === editingId);
-    if (e){ e.name = name; e.url = url; e.desc = desc; e.icon = selectedEmoji; e.iconUrl = iconUrl; e.iconMode = iconMode; e.embed = $('fEmbed').checked; }
+    if (e){ e.name = name; e.url = url; e.desc = desc; e.icon = selectedEmoji; e.iconUrl = iconUrl; e.iconMode = iconMode; e.embed = $('fEmbed').checked; delete e.openMode; }
   } else {
     apps.push({ id: Date.now().toString(36) + Math.random().toString(36).slice(2,6), name, url, desc, icon: selectedEmoji, iconUrl, iconMode, embed: $('fEmbed').checked, addedAt: new Date().toISOString() });
   }

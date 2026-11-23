@@ -43,7 +43,9 @@
       "desc": "",
       "icon": "🔗",
       "addedAt": "2026-10-19T13:36:10.569Z",
-      "iconMode": "emoji"
+      "iconMode": "auto",
+      "iconUrl": "",
+      "embed": true
     },
     {
       "id": "mvqcwa9mrse9",
@@ -73,17 +75,6 @@
       "iconUrl": "https://docs.google.com/favicon.ico",
       "addedAt": "2026-10-27T07:24:48.902Z",
       "iconMode": "auto"
-    },
-    {
-      "id": "mwtef9l67398",
-      "name": "TF-Tracker",
-      "url": "https://ewdazamgarh.github.io/TRANSFORMER-TRACKER/",
-      "desc": "",
-      "icon": "🔗",
-      "iconUrl": "",
-      "iconMode": "auto",
-      "embed": false,
-      "addedAt": "2026-11-23T15:06:30.858Z"
     }
   ]
 }

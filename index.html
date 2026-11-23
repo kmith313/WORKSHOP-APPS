@@ -555,26 +555,39 @@ gridEl.addEventListener('click', e=>{
 
 
 /* ===================== IN-APP VIEWER ===================== */
-let viewerOpen = false, viewerApp = null;
+let viewerOpen = false, viewerApp = null, closeSeq = 0;
 function openViewer(a){
   const v = $('viewer'), f = $('vFrame');
-  viewerApp = a; viewerOpen = true;
+  viewerApp = a; viewerOpen = true; closeSeq++;   // cancel a pending hide (fast close→reopen race)
   $('vTitle').textContent = niceName(a.name);
   $('vLoadName').textContent = 'Opening ' + niceName(a.name) + '...';
   $('vLoad').classList.remove('done');
   v.classList.remove('app-hidden', 'closing');
   f.onload = ()=> $('vLoad').classList.add('done');
-  f.src = a.url;
+  try{ f.contentWindow.location.replace(a.url); }catch(e){ f.src = a.url; }   // replace(): no new history entry
   history.pushState({ viewer:1 }, '');
 }
 function hideViewer(){
   if (!viewerOpen) return;
   viewerOpen = false;
   const v = $('viewer'); v.classList.add('closing');
-  setTimeout(()=>{ v.classList.add('app-hidden'); v.classList.remove('closing'); $('vFrame').src = 'about:blank'; }, 280);
+  const seq = closeSeq;
+  setTimeout(()=>{ if (seq !== closeSeq) return; v.classList.add('app-hidden'); v.classList.remove('closing'); $('vFrame').src = 'about:blank'; }, 280);
 }
-$('vBack').addEventListener('click', ()=>{ if (viewerOpen) history.back(); });   // popstate hides it
-$('vReload').addEventListener('click', ()=>{ if (!viewerApp) return; $('vLoad').classList.remove('done'); $('vFrame').src = viewerApp.url; });
+// Close the viewer DIRECTLY — never by relying on history.back(): the embedded app's iframe has
+// its own entries in the joint session history, so history.back() often walks an iframe entry
+// instead of the viewer's pushState entry. Then no popstate fires, the viewer stays open on a
+// white iframe and "Home" needs 2-3 taps (the white-screen bug seen on installed mobile + desktop).
+function closeViewerNow(){
+  if (!viewerOpen) return;
+  hideViewer();
+  // Best-effort: consume the entry pushed in openViewer so the system/gesture Back does not need
+  // an extra press. If it eats an iframe entry instead, that is harmless now that the viewer is
+  // already hidden and the iframe is being reset to about:blank.
+  try{ if (history.state && history.state.viewer === 1) history.back(); }catch(e){}
+}
+$('vBack').addEventListener('click', closeViewerNow);
+$('vReload').addEventListener('click', ()=>{ if (!viewerApp) return; $('vLoad').classList.remove('done'); try{ $('vFrame').contentWindow.location.replace(viewerApp.url); }catch(e){ $('vFrame').src = viewerApp.url; } });
 window.addEventListener('popstate', ()=>{ if (viewerOpen) hideViewer(); });
 
 /* ===================== LAUNCH (iOS-style zoom, then direct navigation) ===================== */
@@ -630,7 +643,7 @@ function setEditMode(on){
   $('editBtn').querySelector('.dock-ico').textContent = editMode ? '✅' : '✏️';
 }
 $('editBtn').addEventListener('click', ()=> setEditMode(!editMode));
-document.addEventListener('keydown', e=>{ if (e.key === 'Escape'){ if (viewerOpen) history.back(); if (editMode) setEditMode(false); closeModal(); $('adminBackdrop').classList.add('app-hidden'); } });
+document.addEventListener('keydown', e=>{ if (e.key === 'Escape'){ if (viewerOpen) closeViewerNow(); if (editMode) setEditMode(false); closeModal(); $('adminBackdrop').classList.add('app-hidden'); } });
 
 
 /* ===================== READABLE GITHUB ERRORS ===================== */

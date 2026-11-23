@@ -75,6 +75,7 @@
     opacity:0; animation:tileIn .6s var(--spring) forwards; animation-delay:calc(var(--i,0) * 55ms + 150ms);
   }
   @keyframes tileIn{from{opacity:0; transform:translateY(26px) scale(.6);}to{opacity:1; transform:none;}}
+  .tile.instant{animation-duration:.01s;}   /* re-renders: no replay of the entrance animation */
   .icon{
     position:relative; width:var(--icon); height:var(--icon); border-radius:22.4%;
     display:flex; align-items:center; justify-content:center; font-size:calc(var(--icon) * .5);
@@ -372,6 +373,7 @@ let editMode = false;
 let pollTimer = null;
 let selectedEmoji = EMOJI_CHOICES[0];
 let suppressClick = false;
+let holdFetchUntil = 0;
 
 /* ===================== HELPERS ===================== */
 function escapeHtml(s){ return String(s).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
@@ -434,7 +436,7 @@ function writeCache(){ try{ localStorage.setItem(CACHE_KEY, JSON.stringify(apps)
 function warmConnections(){
   // Open network connections to every app's server ahead of time so the first tap is faster.
   const seen = new Set(['https://script.google.com','https://script.googleusercontent.com','https://www.gstatic.com','https://fonts.gstatic.com']);
-  apps.forEach(a=>{ try{ seen.add(new URL(a.url).origin); }catch(e){} });
+  apps.forEach(a=>{ try{ const u = new URL(a.url); if (u.protocol === 'http:' || u.protocol === 'https:') seen.add(u.origin); }catch(e){} });
   seen.forEach(origin=>{
     if (document.head.querySelector(`link[data-warm="${origin}"]`)) return;
     const l = document.createElement('link'); l.rel = 'preconnect'; l.href = origin; l.dataset.warm = origin;
@@ -444,8 +446,12 @@ function warmConnections(){
 }
 
 async function loadApps(silent){
+  // Right after a save, GitHub Pages can still serve the OLD apps.json for a short while;
+  // a poll landing in that window would wipe the just-saved list. Hold off until it settles.
+  if (apps.length && Date.now() < holdFetchUntil) return;
   try{
     const r = await fetch('./' + DATA_FILE + '?t=' + Date.now(), { cache:'no-store' });
+    if (Date.now() < holdFetchUntil) return;   // a save finished while this fetch was in flight
     if (r.ok){
       const json = await r.json();
       apps = Array.isArray(json.apps) ? json.apps : [];
@@ -459,14 +465,14 @@ async function loadApps(silent){
   lastSig = sig;
   writeCache();
   warmConnections();
-  renderApps(!silent && !lastSig ? true : false);
+  renderApps();
 }
 
 function startPolling(){
   if (pollTimer) clearInterval(pollTimer);
-  pollTimer = setInterval(()=>{ if (!document.hidden && !editMode) loadApps(true); }, 30000);
+  pollTimer = setInterval(()=>{ if (!document.hidden && !editMode && Date.now() >= holdFetchUntil && $('modalBackdrop').classList.contains('app-hidden')) loadApps(true); }, 30000);
 }
-document.addEventListener('visibilitychange', ()=>{ if (!document.hidden) loadApps(true); });
+document.addEventListener('visibilitychange', ()=>{ if (!document.hidden && Date.now() >= holdFetchUntil) loadApps(true); });
 
 /* ===================== RENDER ===================== */
 let firstRender = true;
@@ -484,11 +490,11 @@ function renderApps(){
     el.className = 'tile';
     el.href = a.url; el.dataset.id = a.id; el.draggable = false;
     el.style.setProperty('--i', firstRender ? i : 0);
-    if (!firstRender) el.style.animationDelay = '0s';
+    if (!firstRender){ el.style.animationDelay = '0s'; el.classList.add('instant'); }
     el.setAttribute('aria-label', niceName(a.name));
     el.innerHTML = `
       <button class="badge" type="button" aria-label="Delete" data-del="${escapeHtml(a.id)}">−</button>
-      <div class="icon" style="background:linear-gradient(160deg,${c1},${c2})"><span>${a.icon || '🔗'}</span>${(a.iconUrl && a.iconMode !== 'emoji') ? `<img src="${escapeHtml(a.iconUrl)}" alt="" referrerpolicy="no-referrer" decoding="async" draggable="false">` : ''}</div>
+      <div class="icon" style="background:linear-gradient(160deg,${c1},${c2})"><span>${a.icon ? escapeHtml(a.icon) : '🔗'}</span>${(a.iconUrl && a.iconMode !== 'emoji') ? `<img src="${escapeHtml(a.iconUrl)}" alt="" referrerpolicy="no-referrer" decoding="async" draggable="false">` : ''}</div>
       <div class="label">${escapeHtml(niceName(a.name))}</div>`;
     frag.appendChild(el);
   });
@@ -496,7 +502,7 @@ function renderApps(){
   if (adminCfg){
     const add = document.createElement('a');
     add.className = 'tile add'; add.href = '#'; add.style.setProperty('--i', list.length);
-    if (!firstRender) add.style.animationDelay = '0s';
+    if (!firstRender){ add.style.animationDelay = '0s'; add.classList.add('instant'); }
     add.innerHTML = `<div class="icon"><span>+</span></div><div class="label">Add App</div>`;
     add.addEventListener('click', e=>{ e.preventDefault(); openModal(null); });
     frag.appendChild(add);
@@ -527,7 +533,7 @@ gridEl.addEventListener('pointerdown', e=>{
   const tile = e.target.closest('.tile:not(.add)');
   if (!tile || !adminCfg || editMode) return;
   pressTile = tile;
-  pressTimer = setTimeout(()=>{ suppressClick = true; setEditMode(true); if (navigator.vibrate) navigator.vibrate(15); }, 550);
+  pressTimer = setTimeout(()=>{ suppressClick = true; setTimeout(()=>{ suppressClick = false; }, 1200); setEditMode(true); if (navigator.vibrate) navigator.vibrate(15); }, 550);
 });
 ['pointerup','pointercancel','pointerleave','pointermove'].forEach(ev=>{
   gridEl.addEventListener(ev, e=>{ if (ev==='pointermove' && Math.abs(e.movementX)+Math.abs(e.movementY) < 3) return; clearTimeout(pressTimer); });
@@ -577,6 +583,7 @@ function launchApp(tile){
   if (launching) return;
   const a = apps.find(x => x.id === tile.dataset.id);
   if (!a || !a.url) return;
+  if (!/^https?:\/\//i.test(a.url)) return;   // hand-edited apps.json could hold javascript:/data: URLs
   if (a.embed){ openViewer(a); return; }      // this app is set to open inside Workshop Apps
   launching = true;
 
@@ -588,7 +595,7 @@ function launchApp(tile){
   o.className = 'launch';
   const okImg = icon.classList.contains('img-ok') ? icon.querySelector('img') : null;
   o.style.cssText = `left:${r.left}px; top:${r.top}px; width:${r.width}px; height:${r.height}px; border-radius:${r.width*0.224}px; background:${okImg ? '#fff' : `linear-gradient(160deg,${c1},${c2})`};`;
-  o.innerHTML = `<span class="em">${okImg ? `<img src="${escapeHtml(okImg.src)}" alt="">` : (a.icon || '🔗')}</span><div class="spin"></div><div class="lname" ${okImg ? 'style="color:#1b2b40;text-shadow:none"' : ''}>${escapeHtml(niceName(a.name))}</div>`;
+  o.innerHTML = `<span class="em">${okImg ? `<img src="${escapeHtml(okImg.src)}" alt="">` : (a.icon ? escapeHtml(a.icon) : '🔗')}</span><div class="spin"></div><div class="lname" ${okImg ? 'style="color:#1b2b40;text-shadow:none"' : ''}>${escapeHtml(niceName(a.name))}</div>`;
   document.body.appendChild(o);
   document.body.classList.add('launching');
   o.getBoundingClientRect(); // force layout so the transition starts from the icon rect
@@ -602,6 +609,9 @@ function launchApp(tile){
   // Navigate straight away in the top-level window (same speed as opening in Chrome).
   // The zoom animation keeps playing while the next page loads.
   setTimeout(()=>{ window.location.href = a.url; }, 60);
+  // If navigation never happens (blocked, or the URL is a download), restore the home screen
+  // instead of freezing on the zoomed overlay forever.
+  setTimeout(()=>{ launching = false; document.body.classList.remove('launching'); if (o.isConnected) o.remove(); }, 3000);
 }
 
 // Coming back via the Back button (or bfcache restore): reset the launch state.
@@ -716,6 +726,8 @@ async function saveAppsToGithub(message){
       throw new Error(explainGithub(r.status, 'save'));
     }
     lastSig = JSON.stringify(apps); writeCache();
+    holdFetchUntil = Date.now() + 90000;   // ignore app-list refreshes for 90s (Pages publish delay)
+    try{ localStorage.setItem('ws_hold_fetch_until', String(holdFetchUntil)); }catch(e){}
     return true;
   }catch(e){
     showToast('err', e.message || 'Save failed.');
@@ -790,11 +802,13 @@ async function detectAllIcons(){
   $('autoIconBtn').disabled = true;
   showToast('update', `Detecting icons for ${todo.length} app(s)...`);
   let found = 0;
+  const backup = JSON.parse(JSON.stringify(apps));   // restore if the save to GitHub fails
   const results = await Promise.all(todo.map(async a=>{ try{ return [a, await detectIcon(a.url)]; }catch(e){ return [a, '']; } }));
   results.forEach(([a, icon])=>{ if (icon){ a.iconUrl = icon; a.iconMode = 'auto'; found++; } });
   $('autoIconBtn').disabled = false;
   if (!found){ showToast('err', "Couldn't read any app icons. Paste an Icon Image URL in Edit instead."); return; }
   const ok = await saveAppsToGithub(`Auto-detect icons for ${found} app(s)`);
+  if (!ok) apps = backup;
   renderApps();
   showToast(ok ? 'add' : 'err', ok ? `${found} icon(s) detected and saved` : 'Detected, but could not save to GitHub');
 }
@@ -911,6 +925,7 @@ if ('serviceWorker' in navigator){
 }
 
 /* ===================== INIT ===================== */
+try{ holdFetchUntil = parseInt(localStorage.getItem('ws_hold_fetch_until') || '0', 10) || 0; }catch(e){}
 const cached = readCache();
 if (cached && cached.length){ apps = cached; lastSig = JSON.stringify(apps); warmConnections(); }  // instant first paint
 applyAdminUI();
